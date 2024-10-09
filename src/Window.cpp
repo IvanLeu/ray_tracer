@@ -40,7 +40,7 @@ Window::Window(int width_in, int height_in, const char* name)
 
 	hWnd = CreateWindow(
 		windowClassName,
-		"RayTracer",
+		name,
 		wndStyle,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
@@ -69,7 +69,7 @@ std::optional<int> Window::ProcessMessages() noexcept
 {
 	MSG msg;
 	while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-		if (msg.wParam == WM_QUIT) {
+		if (msg.message == WM_QUIT) {
 			return (int)msg.wParam;
 		}
 		TranslateMessage(&msg);
@@ -118,9 +118,6 @@ LRESULT Window::HandleMsg(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) noe
 		// notify the OS that erasing will be handled by the application to prevert flicker.
 		return 1;
 	case WM_CLOSE:
-		// TODO: Fire an event to application to quit
-		return 0;
-	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;
 	case WM_SIZE: {
