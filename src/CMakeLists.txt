@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.26)
 
 set(sources
+	"${CMAKE_CURRENT_SOURCE_DIR}/Application.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/Application.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/Input.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/Input.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/Window.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/Window.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
