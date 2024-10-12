@@ -4,14 +4,6 @@
 #include <queue>
 #include <optional>
 
-class KeyboardState;
-class MouseState;
-
-struct InputState {
-	KeyboardState kbd;
-	MouseState mouse;
-};
-
 class KeyboardState {
 public:
 	class Event {
@@ -49,11 +41,11 @@ public:
 	KeyboardState& operator=(const KeyboardState&) = delete;
 	// key stuff
 	bool KeyIsPressed(unsigned char code) const noexcept;
-	std::optional<Event> ReadKey() const noexcept;
+	std::optional<Event> ReadKey() noexcept;
 	bool KeyIsEmpty() const noexcept;
 	void ClearKey() noexcept;
 	// char stuff
-	std::optional<unsigned char> ReadChar() const noexcept;
+	std::optional<unsigned char> ReadChar() noexcept;
 	bool CharIsEmpty() const noexcept;
 	void ClearChar() noexcept;
 	void Clear() noexcept;
@@ -74,8 +66,14 @@ private:
 	std::bitset<nKeys> keyStates;
 	std::queue<Event> keyBuffer;
 	std::queue<unsigned char> charBuffer;
+	bool autorepeat = false;
 };
 
 class MouseState {
 
+};
+
+struct InputState {
+	KeyboardState kbd;
+	MouseState mouse;
 };
