@@ -1,5 +1,6 @@
 #include "Window.h"
 #include <windowsx.h>
+#include <assert.h>
 
 Window::Window(int width_in, int height_in, const char* name)
 	:
@@ -85,6 +86,7 @@ std::pair<int, int> Window::GetSize() const noexcept
 }
 
 void Window::BindInputState(std::shared_ptr<InputState> input) noexcept {
+	assert(input);
 	pInputState = input;
 }
 
