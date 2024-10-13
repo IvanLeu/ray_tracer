@@ -84,6 +84,10 @@ std::pair<int, int> Window::GetSize() const noexcept
 	return std::pair<int, int>(width, height);
 }
 
+void Window::BindInputState(std::shared_ptr<InputState> input) noexcept {
+	pInputState = input;
+}
+
 LRESULT CALLBACK Window::HandleMsgSetup(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) noexcept
 {
 	// use create parameter passed in CreateWindow() to store window class pointer at WINAPI
@@ -129,13 +133,29 @@ LRESULT Window::HandleMsg(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) noe
 		
 		// TODO: event to for window resize
 	} break;
+	case WM_KILLFOCUS: {
+		if (pInputState != nullptr) {
+			pInputState->kbd.ClearState();
+		}
+	} break;
 	case WM_KEYDOWN:
-	case WM_SYSKEYDOWN:
+	case WM_SYSKEYDOWN: {
+		if (pInputState != nullptr) {
+			if (!(lparam & 0x40000000) || pInputState->kbd.AutorepeatEnabled()) {
+				pInputState->kbd.OnKeyPressed(static_cast<unsigned char>(wparam));
+			}
+		}
+	} break;
 	case WM_KEYUP:
 	case WM_SYSKEYUP: {
-		// Key pressed/released
-		//bool pressed = (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN);
-		// TODO: input processing
+		if (pInputState != nullptr) {
+			pInputState->kbd.OnKeyReleased(static_cast<unsigned char>(wparam));
+		}
+	} break;
+	case WM_CHAR: {
+		if (pInputState != nullptr) {
+			pInputState->kbd.OnChar(static_cast<unsigned char>(wparam));
+		}
 	} break;
 	case WM_MOUSEMOVE: {
 		//int x_position = GET_X_LPARAM(lparam);

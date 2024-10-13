@@ -5,6 +5,7 @@
 #include <optional>
 
 class KeyboardState {
+	friend class Window;
 public:
 	class Event {
 	public:
@@ -70,7 +71,7 @@ private:
 };
 
 class MouseState {
-
+	friend class Window;
 };
 
 struct InputState {
