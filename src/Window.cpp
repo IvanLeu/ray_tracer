@@ -44,8 +44,8 @@ Window::Window(int width_in, int height_in, const char* name)
 		wndStyle,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
-		width,
-		height,
+		rect.right - rect.left,
+		rect.bottom - rect.top,
 		NULL,
 		NULL,
 		hInst,
@@ -158,25 +158,69 @@ LRESULT Window::HandleMsg(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) noe
 		}
 	} break;
 	case WM_MOUSEMOVE: {
-		//int x_position = GET_X_LPARAM(lparam);
-		//int y_position = GET_Y_LPARAM(lparam);
-		// TODO: input processing
+		if (pInputState != nullptr) {
+			const POINTS pt = MAKEPOINTS(lparam);
+
+			if (pt.x >= 0 && pt.x < width && pt.y >= 0 && pt.y < height) {
+				pInputState->mouse.OnMouseMove(pt.x, pt.y);
+				if (!pInputState->mouse.IsInWindow()) {
+					SetCapture(hWnd);
+					pInputState->mouse.OnMouseEnter();
+				}
+			}
+			else {
+				if (wparam & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON)) {
+					pInputState->mouse.OnMouseMove(pt.x, pt.y);
+				}
+				else {
+					ReleaseCapture();
+					pInputState->mouse.OnMouseLeave();
+				}
+			}
+		}
 	} break;
 	case WM_MOUSEWHEEL: {
-		//int delta = GET_WHEEL_DELTA_WPARAM(wparam);
-		//if (delta != 0) {
-		//	delta = (delta < 0) ? -1 : 1;
-		//}
-		// TODO: input processing
+		if (pInputState != nullptr) {
+			const int zdelta = GET_WHEEL_DELTA_WPARAM(wparam);
+			const POINTS pt = MAKEPOINTS(lparam);
+			pInputState->mouse.OnWheelDelta(pt.x, pt.y, zdelta);
+		}
 	} break;
-	case WM_LBUTTONDOWN:
-	case WM_MBUTTONDOWN:
-	case WM_RBUTTONDOWN:
-	case WM_LBUTTONUP:
-	case WM_MBUTTONUP:
+	case WM_LBUTTONDOWN: {
+		if (pInputState != nullptr) {
+			const POINTS pt = MAKEPOINTS(lparam);
+			pInputState->mouse.OnLeftPressed(pt.x, pt.y);
+		}
+	} break;
+	case WM_MBUTTONDOWN: {
+		if (pInputState != nullptr) {
+			const POINTS pt = MAKEPOINTS(lparam);
+			pInputState->mouse.OnMiddlePressed(pt.x, pt.y);
+		}
+	} break;
+	case WM_RBUTTONDOWN: {
+		if (pInputState != nullptr) {
+			const POINTS pt = MAKEPOINTS(lparam);
+			pInputState->mouse.OnRightPressed(pt.x, pt.y);
+		}
+	} break;
+	case WM_LBUTTONUP: {
+		if (pInputState != nullptr) {
+			const POINTS pt = MAKEPOINTS(lparam);
+			pInputState->mouse.OnLeftReleased(pt.x, pt.y);
+		}
+	} break;
+	case WM_MBUTTONUP: {
+		if (pInputState != nullptr) {
+			const POINTS pt = MAKEPOINTS(lparam);
+			pInputState->mouse.OnMiddleReleased(pt.x, pt.y);
+		}
+	} break;
 	case WM_RBUTTONUP: {
-		//bool pressed = (msg == WM_LBUTTONDOWN || msg == WM_MBUTTONDOWN || msg == WM_RBUTTONDOWN);
-		// TODO: input proccesing
+		if (pInputState != nullptr) {
+			const POINTS pt = MAKEPOINTS(lparam);
+			pInputState->mouse.OnRightReleased(pt.x, pt.y);
+		}
 	} break;
 	}
 

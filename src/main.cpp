@@ -1,5 +1,7 @@
 #include "Window.h"
 #include "Input.h"
+#include <sstream>
+#include <iostream>
 
 int main() {
 	//test
@@ -12,9 +14,6 @@ int main() {
 			return *ecode;
 		}
 
-		if (pInputState->kbd.KeyIsPressed(VK_MENU)) {
-			MessageBox(NULL, "Alt was pressed", "Spaaaaaaace!", MB_OK);
-		}
 	}
 
 	return 0;
