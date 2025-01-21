@@ -13,7 +13,10 @@ public:
 	~Window() noexcept;
 	static std::optional<int> ProcessMessages() noexcept;
 	std::pair<int, int> GetSize() const noexcept;
+	int GetWidth() const noexcept;
+	int GetHeight() const noexcept;
 	void BindInputState(std::shared_ptr<InputState> input) noexcept;
+	HWND GetHandle() const;
 private:
 	static LRESULT CALLBACK HandleMsgSetup(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) noexcept;
 	static LRESULT CALLBACK HandleMsgThunk(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) noexcept;

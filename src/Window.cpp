@@ -5,9 +5,9 @@
 Window::Window(int width_in, int height_in, const char* name)
 	:
 	width(width_in),
-	height(height_in)
+	height(height_in),
+	hInst(GetModuleHandle(NULL))
 {
-	// Windows class registration
 	WNDCLASSEX wc = {0};
 	wc.cbSize = sizeof(wc);
 	wc.style = CS_OWNDC;
@@ -24,8 +24,6 @@ Window::Window(int width_in, int height_in, const char* name)
 
 	RegisterClassEx(&wc);
 
-	// Creating the window
-	// Initialising window rect
 	RECT rect;
 	rect.left = 100;
 	rect.right = rect.left + width;
@@ -85,9 +83,24 @@ std::pair<int, int> Window::GetSize() const noexcept
 	return std::pair<int, int>(width, height);
 }
 
+int Window::GetWidth() const noexcept
+{
+	return width;
+}
+
+int Window::GetHeight() const noexcept
+{
+	return height;
+}
+
 void Window::BindInputState(std::shared_ptr<InputState> input) noexcept {
 	assert(input);
 	pInputState = input;
+}
+
+HWND Window::GetHandle() const
+{
+	return hWnd;
 }
 
 LRESULT CALLBACK Window::HandleMsgSetup(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) noexcept

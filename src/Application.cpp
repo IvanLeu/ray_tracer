@@ -1,9 +1,8 @@
 #include "Application.h"
-#include <iostream>
 
 Application::Application()
 	:
-	wnd(1280, 1024, "Ray Tracer App"),
+	wnd(1280, 720, "Ray Tracer App"),
 	pInputState(std::make_shared<InputState>())
 {
 	wnd.BindInputState(pInputState);
@@ -28,12 +27,7 @@ Application::~Application()
 
 void Application::OnUpdate()
 {
-	if (pInputState->kbd.KeyIsPressed(VK_SPACE)) {
-		std::cout << "Space" << std::endl;
-	}
-	if (!pInputState->mouse.IsInWindow()) {
-		std::cout << "Mouse ran away!" << std::endl;;
-	}
+
 }
 
 void Application::OnRender()
