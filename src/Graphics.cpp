@@ -1,8 +1,11 @@
 #include "Graphics.h"
 
 #include <stdexcept>
+#include <ranges>
+#include <vector>
 
 using namespace Microsoft::WRL;
+using namespace DirectX;
 
 static inline std::string HrToString(HRESULT hr)
 {
@@ -22,7 +25,8 @@ static inline void ThrowIfFailed(HRESULT hr)
 Graphics::Graphics(Window& wnd)
 	:
 	width(wnd.GetWidth()),
-	height(wnd.GetHeight())
+	height(wnd.GetHeight()),
+	pixels(new XMFLOAT4[width * height])
 {
 	viewPort = CD3DX12_VIEWPORT(0.0f, 0.0f, (FLOAT)width, (FLOAT)height);
 	rect = CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX);
@@ -33,7 +37,6 @@ void Graphics::StartUp(Window& wnd) {
 	UINT factoryFlags = 0;
 
 #ifdef _DEBUG
-	ComPtr<ID3D12Debug1> pDebug;
 	ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&pDebug)));
 	pDebug->SetEnableGPUBasedValidation(TRUE);
 	pDebug->EnableDebugLayer();
@@ -112,6 +115,65 @@ void Graphics::StartUp(Window& wnd) {
 
 	// The fence
 	ThrowIfFailed(pDevice->CreateFence(fenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&pFence)));
+
+	// Vertex Buffer 
+	{
+		struct Vertex {
+			XMFLOAT3 pos;
+			XMFLOAT2 tc;
+		};
+
+		std::vector<Vertex> vertices = {
+			{{ -1.0f, -1.0f, 0.0f }, {0.0f, 0.0f}}, // 0
+			{{ -1.0f, 1.0f, 0.0f }, {0.0f, 1.0f}},  // 1
+			{{ 1.0f, 1.0f, 0.0f }, {1.0f, 1.0f}},   // 2
+			{{ 1.0f, -1.0f, 0.0f }, {1.0f, 0.0f}},  // 3
+		};
+
+		{
+			auto heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+			auto resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(sizeof(vertices));
+			ThrowIfFailed(pDevice->CreateCommittedResource(
+				&heapProps,
+				D3D12_HEAP_FLAG_NONE,
+				&resourceDesc,
+				D3D12_RESOURCE_STATE_COPY_DEST,
+				NULL,
+				IID_PPV_ARGS(&pVertexBuffer)));
+		}
+
+		ComPtr<ID3D12Resource> pVertexUploadBuffer;
+		{
+			auto heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+			auto resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(sizeof(vertices));
+			ThrowIfFailed(pDevice->CreateCommittedResource(
+				&heapProps,
+				D3D12_HEAP_FLAG_NONE,
+				&resourceDesc,
+				D3D12_RESOURCE_STATE_GENERIC_READ,
+				NULL,
+				IID_PPV_ARGS(&pVertexUploadBuffer)));
+		}
+
+		Vertex* uploadData = nullptr;
+		ThrowIfFailed(pVertexUploadBuffer->Map(0, nullptr, reinterpret_cast<void**>(&uploadData)));
+		std::ranges::copy(vertices, uploadData);
+		pVertexBuffer->Unmap(0, nullptr);
+
+		ThrowIfFailed(pCommandAllocator->Reset());
+		ThrowIfFailed(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
+
+		pCommandList->CopyResource(pVertexBuffer.Get(), pVertexUploadBuffer.Get());
+
+		ThrowIfFailed(pCommandList->Close());
+
+		ID3D12CommandList* lists[] = { pCommandList.Get() };
+		pCommandQueue->ExecuteCommandLists(1, lists);
+
+		ThrowIfFailed(pCommandQueue->Signal(pFence.Get(), ++fenceValue));
+		ThrowIfFailed(pFence->SetEventOnCompletion(fenceValue, nullptr));
+
+	}
 }
 
 void Graphics::ShutDown()

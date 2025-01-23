@@ -4,7 +4,10 @@
 #include <wrl.h>
 #include <d3d12.h>
 #include <dxgi1_6.h>
+#include <DirectXMath.h>
 #include "d3dx12\d3dx12.h"
+
+#include <memory>
 
 class Graphics {
 public:
@@ -19,7 +22,7 @@ private:
 	void ShutDown();
 private:
 #ifdef _DEBUG
-	Microsoft::WRL::ComPtr<ID3D12Debug2> pDebug;
+	Microsoft::WRL::ComPtr<ID3D12Debug1> pDebug;
 #endif
 	static constexpr UINT nBuffers = 2;
 	int width;
@@ -36,5 +39,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> pCommandAllocator;
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> pCommandList;
 	Microsoft::WRL::ComPtr<ID3D12Fence> pFence;
-
+	Microsoft::WRL::ComPtr<ID3D12Resource> pVertexBuffer;
+	Microsoft::WRL::ComPtr<ID3D12Resource> pIndexBuffer;
+	std::unique_ptr<DirectX::XMFLOAT4[]> pixels = nullptr;
 };
