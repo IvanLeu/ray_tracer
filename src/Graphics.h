@@ -41,5 +41,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Fence> pFence;
 	Microsoft::WRL::ComPtr<ID3D12Resource> pVertexBuffer;
 	Microsoft::WRL::ComPtr<ID3D12Resource> pIndexBuffer;
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
+	D3D12_INDEX_BUFFER_VIEW indexBufferView;
 	std::unique_ptr<DirectX::XMFLOAT4[]> pixels = nullptr;
 };

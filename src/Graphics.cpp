@@ -158,7 +158,7 @@ void Graphics::StartUp(Window& wnd) {
 		Vertex* uploadData = nullptr;
 		ThrowIfFailed(pVertexUploadBuffer->Map(0, nullptr, reinterpret_cast<void**>(&uploadData)));
 		std::ranges::copy(vertices, uploadData);
-		pVertexBuffer->Unmap(0, nullptr);
+		pVertexUploadBuffer->Unmap(0, nullptr);
 
 		ThrowIfFailed(pCommandAllocator->Reset());
 		ThrowIfFailed(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
@@ -173,6 +173,67 @@ void Graphics::StartUp(Window& wnd) {
 		ThrowIfFailed(pCommandQueue->Signal(pFence.Get(), ++fenceValue));
 		ThrowIfFailed(pFence->SetEventOnCompletion(fenceValue, nullptr));
 
+		vertexBufferView = {
+			.BufferLocation = pVertexBuffer->GetGPUVirtualAddress(),
+			.SizeInBytes = sizeof(vertices),
+			.StrideInBytes = sizeof(Vertex)
+		};
+	}
+
+	// Index Buffer 
+	{
+		std::vector<WORD> indices = {
+			0,1,2,0,2,3
+		};
+
+		{
+			auto heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+			auto resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(sizeof(indices));
+			ThrowIfFailed(pDevice->CreateCommittedResource(
+				&heapProps,
+				D3D12_HEAP_FLAG_NONE,
+				&resourceDesc,
+				D3D12_RESOURCE_STATE_COPY_DEST,
+				NULL,
+				IID_PPV_ARGS(&pIndexBuffer)));
+		}
+
+		ComPtr<ID3D12Resource> pIndexUploadBuffer;
+		{
+			auto heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+			auto resourceDesc = CD3DX12_RESOURCE_DESC::Buffer(sizeof(indices));
+			ThrowIfFailed(pDevice->CreateCommittedResource(
+				&heapProps,
+				D3D12_HEAP_FLAG_NONE,
+				&resourceDesc,
+				D3D12_RESOURCE_STATE_GENERIC_READ,
+				NULL,
+				IID_PPV_ARGS(&pIndexUploadBuffer)));
+		}
+
+		WORD* uploadData = nullptr;
+		ThrowIfFailed(pIndexUploadBuffer->Map(0, nullptr, reinterpret_cast<void**>(&uploadData)));
+		std::ranges::copy(indices, uploadData);
+		pIndexUploadBuffer->Unmap(0, nullptr);
+
+		ThrowIfFailed(pCommandAllocator->Reset());
+		ThrowIfFailed(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
+
+		pCommandList->CopyResource(pIndexBuffer.Get(), pIndexUploadBuffer.Get());
+
+		ThrowIfFailed(pCommandList->Close());
+
+		ID3D12CommandList* lists[] = { pCommandList.Get() };
+		pCommandQueue->ExecuteCommandLists(1, lists);
+
+		ThrowIfFailed(pCommandQueue->Signal(pFence.Get(), ++fenceValue));
+		ThrowIfFailed(pFence->SetEventOnCompletion(fenceValue, nullptr));
+
+		indexBufferView = {
+			.BufferLocation = pIndexBuffer->GetGPUVirtualAddress(),
+			.SizeInBytes = sizeof(indices),
+			.Format = DXGI_FORMAT_R16_UINT
+		};
 	}
 }
 
