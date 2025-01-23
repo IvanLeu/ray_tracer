@@ -1,5 +1,6 @@
 #include "Graphics.h"
 
+#include <d3dcompiler.h>
 #include <stdexcept>
 #include <ranges>
 #include <vector>
@@ -235,6 +236,58 @@ void Graphics::StartUp(Window& wnd) {
 			.Format = DXGI_FORMAT_R16_UINT
 		};
 	}
+
+	// Root Signature
+	{
+		CD3DX12_ROOT_SIGNATURE_DESC rootDesc;
+		rootDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+		ComPtr<ID3DBlob> signature;
+		ComPtr<ID3DBlob> error;
+		ThrowIfFailed(D3D12SerializeRootSignature(&rootDesc,
+			D3D_ROOT_SIGNATURE_VERSION_1_0,
+			&signature,
+			&error));
+
+		ThrowIfFailed(pDevice->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&pRootSignature)));
+	}
+
+	// Pipeline State Object
+	{
+		struct PipelineStateStream {
+			CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE rootSignature;
+			CD3DX12_PIPELINE_STATE_STREAM_INPUT_LAYOUT inputLayout;
+			CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY topology;
+			CD3DX12_PIPELINE_STATE_STREAM_VS VS;
+			CD3DX12_PIPELINE_STATE_STREAM_PS PS;
+			CD3DX12_PIPELINE_STATE_STREAM_RENDER_TARGET_FORMATS rtvFormats;
+		} pipelineStateStream;
+
+		const D3D12_INPUT_ELEMENT_DESC inputDesc[] = {
+			{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+			{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		};
+
+		ThrowIfFailed(D3DReadFileToBlob(L"VertexShader.cso", &pVertexShader));
+		ThrowIfFailed(D3DReadFileToBlob(L"PixelShader.cso", &pPixelShader));
+
+		pipelineStateStream.rootSignature = pRootSignature.Get();
+		pipelineStateStream.inputLayout = { .pInputElementDescs = inputDesc, .NumElements = std::size(inputDesc) };
+		pipelineStateStream.topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		pipelineStateStream.VS = CD3DX12_SHADER_BYTECODE{pVertexShader.Get()};
+		pipelineStateStream.PS = CD3DX12_SHADER_BYTECODE{pPixelShader.Get()};
+		pipelineStateStream.rtvFormats = {
+			.RTFormats = {DXGI_FORMAT_B8G8R8A8_UNORM},
+			.NumRenderTargets = 1
+		};
+
+		D3D12_PIPELINE_STATE_STREAM_DESC desc = {
+			.SizeInBytes = sizeof(pipelineStateStream),
+			.pPipelineStateSubobjectStream = &pipelineStateStream
+		};
+
+		ThrowIfFailed(pDevice->CreatePipelineState(&desc, IID_PPV_ARGS(&PSO)));
+	}
 }
 
 void Graphics::ShutDown()
@@ -250,7 +303,7 @@ Graphics::~Graphics()
 
 void Graphics::BeginFrame()
 {
-	// Clear the texture
+	std::ranges::fill_n(pixels.get(), width * height, clearColor);
 }
 
 void Graphics::EndFrame()
@@ -260,6 +313,16 @@ void Graphics::EndFrame()
 
 	UINT frameIndex = pSwapChain->GetCurrentBackBufferIndex();
 	auto rtvHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(rtvHeap->GetCPUDescriptorHandleForHeapStart(), frameIndex, rtvIncrementSize);
+
+	pCommandList->RSSetViewports(1, &viewPort);
+	pCommandList->RSSetScissorRects(1, &rect);
+
+	pCommandList->SetGraphicsRootSignature(pRootSignature.Get());
+	pCommandList->SetPipelineState(PSO.Get());
+
+	pCommandList->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	pCommandList->IASetVertexBuffers(0, 1, &vertexBufferView);
+	pCommandList->IASetIndexBuffer(&indexBufferView);
 
 	pCommandList->OMSetRenderTargets(1, &rtvHandle, TRUE, nullptr);
 
@@ -271,6 +334,7 @@ void Graphics::EndFrame()
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 
 	pCommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	pCommandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
 
 	{
 		auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(pRTV[frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
