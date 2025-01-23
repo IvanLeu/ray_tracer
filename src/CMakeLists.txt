@@ -12,12 +12,15 @@ set(sources
 	"${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
 )
 
+file(GLOB SHADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.hlsl")
+
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${sources})
 
 add_executable(
 	core
 	WIN32
 	${sources}
+	${SHADER_FILES}
 )
 
 if(MSVC)
@@ -35,6 +38,7 @@ target_link_libraries(
 	dxgi
 	dxguid
 	user32
+	d3dcompiler
 )
 
 target_include_directories(
@@ -43,3 +47,15 @@ target_include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}/d3dx12
 	${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+set(SHADERS_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/shaders")
+set(SHADERS_DEST_DIR "$<TARGET_FILE_DIR:core>/shaders")
+
+add_custom_command(TARGET core POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E make_directory "${SHADERS_DEST_DIR}"
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${SHADERS_SRC_DIR}"
+		"${SHADERS_DEST_DIR}"
+)
+
+source_group("shaders" FILES ${SHADER_FILES})

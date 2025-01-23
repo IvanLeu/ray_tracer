@@ -303,7 +303,7 @@ Graphics::~Graphics()
 
 void Graphics::BeginFrame()
 {
-	std::ranges::fill_n(pixels.get(), width * height, clearColor);
+	std::ranges::fill_n(pixels.get(), width * height, clearTextureColor);
 }
 
 void Graphics::EndFrame()
