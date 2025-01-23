@@ -32,4 +32,8 @@ void Application::OnUpdate()
 
 void Application::OnRender()
 {
+	gfx.BeginFrame();
+
+
+	gfx.EndFrame();
 }

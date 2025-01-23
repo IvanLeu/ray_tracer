@@ -1,5 +1,6 @@
 #include "Window.h"
 #include "Input.h"
+#include "Graphics.h"
 #include <memory>
 
 class Application {
@@ -15,5 +16,6 @@ private:
 private:
 	bool running = true;
 	Window wnd;
+	Graphics gfx{ wnd };
 	std::shared_ptr<InputState> pInputState;
 };

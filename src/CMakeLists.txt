@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.26)
 
 set(sources
+	"${CMAKE_CURRENT_SOURCE_DIR}/Graphics.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/Graphics.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/Application.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/Application.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/Input.h"
@@ -26,8 +28,18 @@ if(MSVC)
 	)
 endif()
 
+target_link_libraries(
+	core
+	PRIVATE
+	d3d12
+	dxgi
+	dxguid
+	user32
+)
+
 target_include_directories(
 	core
 	PRIVATE
+	${CMAKE_CURRENT_SOURCE_DIR}/d3dx12
 	${CMAKE_CURRENT_SOURCE_DIR}
 )
