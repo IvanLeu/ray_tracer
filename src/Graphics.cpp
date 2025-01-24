@@ -124,7 +124,7 @@ void Graphics::StartUp(Window& wnd) {
 			XMFLOAT2 tc;
 		};
 
-		std::vector<Vertex> vertices = {
+		Vertex vertices[] = {
 			{{ -1.0f, -1.0f, 0.0f }, {0.0f, 0.0f}}, // 0
 			{{ -1.0f, 1.0f, 0.0f }, {0.0f, 1.0f}},  // 1
 			{{ 1.0f, 1.0f, 0.0f }, {1.0f, 1.0f}},   // 2
@@ -166,6 +166,11 @@ void Graphics::StartUp(Window& wnd) {
 
 		pCommandList->CopyResource(pVertexBuffer.Get(), pVertexUploadBuffer.Get());
 
+		{
+			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(pVertexBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON);
+			pCommandList->ResourceBarrier(1, &barrier);
+		}
+
 		ThrowIfFailed(pCommandList->Close());
 
 		ID3D12CommandList* lists[] = { pCommandList.Get() };
@@ -183,9 +188,11 @@ void Graphics::StartUp(Window& wnd) {
 
 	// Index Buffer 
 	{
-		std::vector<WORD> indices = {
+		WORD indices[] = {
 			0,1,2,0,2,3
 		};
+
+		nIndices = (UINT)std::size(indices);
 
 		{
 			auto heapProps = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
@@ -221,6 +228,11 @@ void Graphics::StartUp(Window& wnd) {
 		ThrowIfFailed(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
 
 		pCommandList->CopyResource(pIndexBuffer.Get(), pIndexUploadBuffer.Get());
+
+		{
+			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(pIndexBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON);
+			pCommandList->ResourceBarrier(1, &barrier);
+		}
 
 		ThrowIfFailed(pCommandList->Close());
 
@@ -334,7 +346,7 @@ void Graphics::EndFrame()
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 
 	pCommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-	pCommandList->DrawIndexedInstanced(6, 1, 0, 0, 0);
+	pCommandList->DrawIndexedInstanced(nIndices, 1, 0, 0, 0);
 
 	{
 		auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(pRTV[frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);

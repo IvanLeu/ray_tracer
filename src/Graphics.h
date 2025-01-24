@@ -30,6 +30,7 @@ private:
 	int height;
 	UINT rtvIncrementSize = 0;
 	UINT fenceValue = 0;
+	UINT nIndices = 0;
 	D3D12_VIEWPORT viewPort;
 	D3D12_RECT rect;
 	Microsoft::WRL::ComPtr<ID3D12Device2> pDevice;
