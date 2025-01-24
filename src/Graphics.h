@@ -24,6 +24,7 @@ private:
 #ifdef _DEBUG
 	Microsoft::WRL::ComPtr<ID3D12Debug1> pDebug;
 #endif
+	DirectX::XMMATRIX proj;
 	static constexpr UINT nBuffers = 2;
 	static constexpr DirectX::XMFLOAT4 clearTextureColor{ 0.0f, 0.0f, 0.1f, 1.0f };
 	int width;
@@ -31,7 +32,7 @@ private:
 	UINT rtvIncrementSize = 0;
 	UINT fenceValue = 0;
 	UINT nIndices = 0;
-	UINT uploadTextureBufferSize = 0;
+	UINT64 uploadTextureBufferSize = 0;
 	D3D12_VIEWPORT viewPort;
 	D3D12_RECT rect;
 	Microsoft::WRL::ComPtr<ID3D12Device2> pDevice;

@@ -31,6 +31,7 @@ Graphics::Graphics(Window& wnd)
 {
 	viewPort = CD3DX12_VIEWPORT(0.0f, 0.0f, (FLOAT)width, (FLOAT)height);
 	rect = CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX);
+	proj = XMMatrixTranspose(XMMatrixScaling(1.0f, float(width / height), 1.0f));
 	StartUp(wnd);
 }
 
@@ -263,12 +264,13 @@ void Graphics::StartUp(Window& wnd) {
 		CD3DX12_DESCRIPTOR_RANGE descRange;
 		descRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
-		CD3DX12_ROOT_PARAMETER rootParams[1];
-		rootParams[0].InitAsDescriptorTable(1, &descRange, D3D12_SHADER_VISIBILITY_PIXEL);
+		CD3DX12_ROOT_PARAMETER rootParams[2];
+		rootParams[0].InitAsConstants(sizeof(XMMATRIX) / 4, 0, 0, D3D12_SHADER_VISIBILITY_VERTEX);
+		rootParams[1].InitAsDescriptorTable(1, &descRange, D3D12_SHADER_VISIBILITY_PIXEL);
 
 		CD3DX12_STATIC_SAMPLER_DESC desc(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR);
 
-		rootDesc.Init(1, &rootParams[0], 1, &desc, rootFlags);
+		rootDesc.Init((UINT)std::size(rootParams), &rootParams[0], 1, &desc, rootFlags);
 
 		ComPtr<ID3DBlob> signature;
 		ComPtr<ID3DBlob> error;
@@ -372,7 +374,7 @@ void Graphics::StartUp(Window& wnd) {
 		pDevice->CreateShaderResourceView(pTexture.Get(), &desc, srvHeap->GetCPUDescriptorHandleForHeapStart());
 
 		textureData.pData = pixels.get();
-		textureData.RowPitch = width * 4;
+		textureData.RowPitch = width * sizeof(XMFLOAT4);
 		textureData.SlicePitch = textureData.RowPitch * height;
 	}
 }
@@ -429,7 +431,8 @@ void Graphics::EndFrame()
 	pCommandList->OMSetRenderTargets(1, &rtvHandle, TRUE, nullptr);
 
 	pCommandList->SetDescriptorHeaps(1, srvHeap.GetAddressOf());
-	pCommandList->SetGraphicsRootDescriptorTable(0, srvHeap->GetGPUDescriptorHandleForHeapStart());
+	pCommandList->SetGraphicsRoot32BitConstants(0, sizeof(XMMATRIX) / 4, &proj, 0);
+	pCommandList->SetGraphicsRootDescriptorTable(1, srvHeap->GetGPUDescriptorHandleForHeapStart());
 
 	{
 		auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(pRTV[frameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);

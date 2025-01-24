@@ -4,10 +4,17 @@ struct PSOut
     float4 position : SV_Position;
 };
 
+struct Proj
+{
+    matrix proj;
+};
+
+ConstantBuffer<Proj> buf : register(b0);
+
 PSOut main(float3 pos : POSITION, float2 tc : TEXCOORD)
 {
     PSOut psOut;
-    psOut.position = float4(pos, 1.0f);
+    psOut.position = mul(buf.proj, float4(pos, 1.0f));
     psOut.tc = tc;
     
     return psOut;
