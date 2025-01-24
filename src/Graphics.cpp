@@ -6,6 +6,10 @@
 #include <vector>
 #include <cassert>
 
+#include "imgui.h"
+#include "backends\imgui_impl_win32.h"
+#include "backends\imgui_impl_dx12.h"
+
 using namespace Microsoft::WRL;
 using namespace DirectX;
 
@@ -34,6 +38,43 @@ Graphics::Graphics(Window& wnd)
 	rect = CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX);
 	proj = XMMatrixTranspose(XMMatrixScaling(1.0f, float(width / height), 1.0f));
 	StartUp(wnd);
+	if (!InitImGui(wnd)) {
+		throw std::runtime_error("Failed to initialize ImGui");
+	}
+}
+
+bool Graphics::InitImGui(Window& wnd) {
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+
+	ImGui::StyleColorsDark();
+
+	if (!ImGui_ImplWin32_Init(wnd.GetHandle())) {
+		return false;
+	}
+
+	ImGui_ImplDX12_InitInfo init_info;
+	init_info.Device = pDevice.Get();
+	init_info.NumFramesInFlight = nBuffers;
+	init_info.RTVFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
+	init_info.SrvDescriptorHeap = srvHeap.Get();
+	init_info.LegacySingleSrvCpuDescriptor = srvHeap->GetCPUDescriptorHandleForHeapStart();
+	init_info.LegacySingleSrvGpuDescriptor = srvHeap->GetGPUDescriptorHandleForHeapStart();
+	init_info.CommandQueue = pCommandQueue.Get();
+
+	if (!ImGui_ImplDX12_Init(&init_info)) {
+		return false;
+	}
+
+	return true;
+}
+
+void Graphics::CleanUpImGui() const
+{
+	ImGui_ImplDX12_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
 }
 
 void Graphics::StartUp(Window& wnd) {
@@ -105,8 +146,8 @@ void Graphics::StartUp(Window& wnd) {
 		auto rtvHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(rtvHeap->GetCPUDescriptorHandleForHeapStart());
 		rtvIncrementSize = pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 		for (int i = 0; i < nBuffers; ++i) {
-			ThrowIfFailed(pSwapChain->GetBuffer(i, IID_PPV_ARGS(&pRTV[i])));
-			pDevice->CreateRenderTargetView(pRTV[i].Get(), nullptr, rtvHandle);
+			ThrowIfFailed(pSwapChain->GetBuffer(i, IID_PPV_ARGS(&pRenderTargets[i])));
+			pDevice->CreateRenderTargetView(pRenderTargets[i].Get(), nullptr, rtvHandle);
 			rtvHandle.Offset(rtvIncrementSize);
 		}
 	}
@@ -365,7 +406,7 @@ void Graphics::StartUp(Window& wnd) {
 
 		D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {
 			.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-			.NumDescriptors = 1,
+			.NumDescriptors = 2,
 			.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
 			.NodeMask = 0
 		};
@@ -388,11 +429,15 @@ void Graphics::ShutDown()
 
 Graphics::~Graphics()
 {
+	CleanUpImGui();
 	ShutDown();
 }
 
 void Graphics::BeginFrame()
 {
+	ImGui_ImplWin32_NewFrame();
+	ImGui_ImplDX12_NewFrame();
+	ImGui::NewFrame();
 	std::ranges::fill_n(pixels.get(), width * height, clearTextureColor);
 }
 
@@ -400,6 +445,10 @@ void Graphics::EndFrame()
 {
 	ThrowIfFailed(pCommandAllocator->Reset());
 	ThrowIfFailed(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
+
+	// Render ImGui data
+	ImGui::Render();
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), pCommandList.Get());
 
 	// Update the texture
 	{
@@ -436,7 +485,7 @@ void Graphics::EndFrame()
 	pCommandList->SetGraphicsRootDescriptorTable(1, srvHeap->GetGPUDescriptorHandleForHeapStart());
 
 	{
-		auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(pRTV[frameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(pRenderTargets[frameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 		pCommandList->ResourceBarrier(1, &barrier);
 	}
 
@@ -446,7 +495,7 @@ void Graphics::EndFrame()
 	pCommandList->DrawIndexedInstanced(nIndices, 1, 0, 0, 0);
 
 	{
-		auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(pRTV[frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+		auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(pRenderTargets[frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 		pCommandList->ResourceBarrier(1, &barrier);
 	}
 

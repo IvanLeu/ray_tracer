@@ -12,6 +12,16 @@ set(sources
 	"${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
 )
 
+set(IMGUI_SOURCES
+	${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_draw.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_widgets.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_tables.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_demo.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_win32.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_dx12.cpp
+)
+
 file(GLOB SHADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.hlsl")
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${sources})
@@ -21,6 +31,7 @@ add_executable(
 	WIN32
 	${sources}
 	${SHADER_FILES}
+	${IMGUI_SOURCES}
 )
 
 if(MSVC)
@@ -45,6 +56,8 @@ target_include_directories(
 	core
 	PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/d3dx12
+	${CMAKE_CURRENT_SOURCE_DIR}/imgui
+	${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends
 	${CMAKE_CURRENT_SOURCE_DIR}
 )
 
@@ -59,3 +72,4 @@ add_custom_command(TARGET core POST_BUILD
 )
 
 source_group("shaders" FILES ${SHADER_FILES})
+source_group("imgui" FILES ${IMGUI_SOURCES})

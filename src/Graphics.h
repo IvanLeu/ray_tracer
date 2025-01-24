@@ -34,6 +34,8 @@ public:
 private:
 	void StartUp(Window& wnd);
 	void ShutDown();
+	bool InitImGui(Window& wnd);
+	void CleanUpImGui() const;
 private:
 #ifdef _DEBUG
 	Microsoft::WRL::ComPtr<ID3D12Debug1> pDebug;
@@ -52,7 +54,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Device2> pDevice;
 	Microsoft::WRL::ComPtr<IDXGISwapChain4> pSwapChain;
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> pCommandQueue;
-	Microsoft::WRL::ComPtr<ID3D12Resource> pRTV[nBuffers];
+	Microsoft::WRL::ComPtr<ID3D12Resource> pRenderTargets[nBuffers];
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvHeap;
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> pCommandAllocator;
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> pCommandList;

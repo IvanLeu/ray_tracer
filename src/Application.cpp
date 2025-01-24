@@ -1,4 +1,5 @@
 #include "Application.h"
+#include "imgui.h"
 
 Application::Application()
 	:
@@ -33,6 +34,9 @@ void Application::OnUpdate()
 void Application::OnRender()
 {
 	gfx.BeginFrame();
+	
+	bool showDemo = true;
+	ImGui::ShowDemoWindow(&showDemo);
 
 	for (int y = 100; y < 200; ++y) {
 		for (int x = 100; x < 200; ++x) {
