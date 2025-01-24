@@ -251,8 +251,24 @@ void Graphics::StartUp(Window& wnd) {
 
 	// Root Signature
 	{
+		const D3D12_ROOT_SIGNATURE_FLAGS rootFlags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_AMPLIFICATION_SHADER_ROOT_ACCESS |
+			D3D12_ROOT_SIGNATURE_FLAG_DENY_MESH_SHADER_ROOT_ACCESS;
+
 		CD3DX12_ROOT_SIGNATURE_DESC rootDesc;
-		rootDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+		CD3DX12_DESCRIPTOR_RANGE descRange;
+		descRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+
+		CD3DX12_ROOT_PARAMETER rootParams[1];
+		rootParams[0].InitAsDescriptorTable(1, &descRange, D3D12_SHADER_VISIBILITY_PIXEL);
+
+		CD3DX12_STATIC_SAMPLER_DESC desc(0, D3D12_FILTER_MIN_MAG_MIP_LINEAR);
+
+		rootDesc.Init(1, &rootParams[0], 1, &desc, rootFlags);
 
 		ComPtr<ID3DBlob> signature;
 		ComPtr<ID3DBlob> error;
@@ -300,6 +316,65 @@ void Graphics::StartUp(Window& wnd) {
 
 		ThrowIfFailed(pDevice->CreatePipelineState(&desc, IID_PPV_ARGS(&PSO)));
 	}
+
+	// Main texture
+	{
+		// Default
+		{
+			auto heapProps = CD3DX12_HEAP_PROPERTIES{ D3D12_HEAP_TYPE_DEFAULT };
+			auto resDesc = CD3DX12_RESOURCE_DESC::Tex2D(
+				DXGI_FORMAT_B8G8R8A8_UNORM,
+				width,
+				height,
+				1u,
+				1u);
+
+			ThrowIfFailed(pDevice->CreateCommittedResource(
+				&heapProps, 
+				D3D12_HEAP_FLAG_NONE, 
+				&resDesc, 
+				D3D12_RESOURCE_STATE_COMMON, 
+				NULL, 
+				IID_PPV_ARGS(&pTexture)));
+		}
+
+		uploadTextureBufferSize = GetRequiredIntermediateSize(pTexture.Get(), 0, 1);
+
+		// Upload
+		{
+			auto heapProps = CD3DX12_HEAP_PROPERTIES{ D3D12_HEAP_TYPE_UPLOAD };
+			auto resDesc = CD3DX12_RESOURCE_DESC::Buffer(uploadTextureBufferSize);
+
+			ThrowIfFailed(pDevice->CreateCommittedResource(
+				&heapProps,
+				D3D12_HEAP_FLAG_NONE,
+				&resDesc,
+				D3D12_RESOURCE_STATE_GENERIC_READ,
+				NULL,
+				IID_PPV_ARGS(&pUploadTexture)));
+		}
+
+		D3D12_SHADER_RESOURCE_VIEW_DESC desc;
+		desc.Format = pTexture->GetDesc().Format;
+		desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+		desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		desc.Texture2D = { .MipLevels = 1 };
+
+		D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {
+			.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+			.NumDescriptors = 1,
+			.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
+			.NodeMask = 0
+		};
+
+		ThrowIfFailed(pDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&srvHeap)));
+
+		pDevice->CreateShaderResourceView(pTexture.Get(), &desc, srvHeap->GetCPUDescriptorHandleForHeapStart());
+
+		textureData.pData = pixels.get();
+		textureData.RowPitch = width * 4;
+		textureData.SlicePitch = textureData.RowPitch * height;
+	}
 }
 
 void Graphics::ShutDown()
@@ -323,6 +398,21 @@ void Graphics::EndFrame()
 	ThrowIfFailed(pCommandAllocator->Reset());
 	ThrowIfFailed(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
 
+	// Update the texture
+	{
+		{
+			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(pTexture.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+			pCommandList->ResourceBarrier(1, &barrier);
+		}
+
+		UpdateSubresources(pCommandList.Get(), pTexture.Get(), pUploadTexture.Get(), 0, 0, 1, &textureData);
+
+		{
+			auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(pTexture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			pCommandList->ResourceBarrier(1, &barrier);
+		}
+	}
+
 	UINT frameIndex = pSwapChain->GetCurrentBackBufferIndex();
 	auto rtvHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(rtvHeap->GetCPUDescriptorHandleForHeapStart(), frameIndex, rtvIncrementSize);
 
@@ -337,6 +427,9 @@ void Graphics::EndFrame()
 	pCommandList->IASetIndexBuffer(&indexBufferView);
 
 	pCommandList->OMSetRenderTargets(1, &rtvHandle, TRUE, nullptr);
+
+	pCommandList->SetDescriptorHeaps(1, srvHeap.GetAddressOf());
+	pCommandList->SetGraphicsRootDescriptorTable(0, srvHeap->GetGPUDescriptorHandleForHeapStart());
 
 	{
 		auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(pRTV[frameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);

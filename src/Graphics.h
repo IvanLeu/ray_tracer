@@ -25,12 +25,13 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Debug1> pDebug;
 #endif
 	static constexpr UINT nBuffers = 2;
-	static constexpr DirectX::XMFLOAT4 clearTextureColor{ 1.0f, 0.0f, 0.0f, 1.0f };
+	static constexpr DirectX::XMFLOAT4 clearTextureColor{ 0.0f, 0.0f, 0.1f, 1.0f };
 	int width;
 	int height;
 	UINT rtvIncrementSize = 0;
 	UINT fenceValue = 0;
 	UINT nIndices = 0;
+	UINT uploadTextureBufferSize = 0;
 	D3D12_VIEWPORT viewPort;
 	D3D12_RECT rect;
 	Microsoft::WRL::ComPtr<ID3D12Device2> pDevice;
@@ -47,6 +48,10 @@ private:
 	Microsoft::WRL::ComPtr<ID3DBlob> pPixelShader;
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> pRootSignature;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> PSO;
+	Microsoft::WRL::ComPtr<ID3D12Resource> pTexture;
+	Microsoft::WRL::ComPtr<ID3D12Resource> pUploadTexture;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvHeap;
+	D3D12_SUBRESOURCE_DATA textureData;
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 	D3D12_INDEX_BUFFER_VIEW indexBufferView;
 	std::unique_ptr<DirectX::XMFLOAT4[]> pixels = nullptr;
