@@ -17,6 +17,20 @@ public:
 	~Graphics();
 	void BeginFrame();
 	void EndFrame();
+	inline void PutPixel(int x, int y, DirectX::XMFLOAT4 color)
+	{
+		assert(x >= 0 && x <= width);
+		assert(y >= 0 && y <= height);
+
+		pixels[y * width + x] = color;
+	}
+	inline DirectX::XMFLOAT4 GetPixel(int x, int y) const
+	{
+		assert(x >= 0 && x <= width);
+		assert(y >= 0 && y <= height);
+
+		return  pixels[y * width + x];
+	}
 private:
 	void StartUp(Window& wnd);
 	void ShutDown();
@@ -26,7 +40,7 @@ private:
 #endif
 	DirectX::XMMATRIX proj;
 	static constexpr UINT nBuffers = 2;
-	static constexpr DirectX::XMFLOAT4 clearTextureColor{ 0.0f, 0.0f, 0.1f, 1.0f };
+	static constexpr DirectX::XMFLOAT4 clearTextureColor{ 1.0f, 0.0f, 0.0f, 1.0f };
 	int width;
 	int height;
 	UINT rtvIncrementSize = 0;

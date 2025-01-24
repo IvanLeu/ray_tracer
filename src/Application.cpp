@@ -34,6 +34,17 @@ void Application::OnRender()
 {
 	gfx.BeginFrame();
 
+	for (int y = 100; y < 200; ++y) {
+		for (int x = 100; x < 200; ++x) {
+			gfx.PutPixel(x, y, { 0.0f, 0.0f, 1.0f, 1.0f });
+		}
+	}
+
+	for (int y = 300; y < 400; ++y) {
+		for (int x = 300; x < 400; ++x) {
+			gfx.PutPixel(x, y, { 0.0f, 0.0f, 1.0f, 1.0f });
+		}
+	}
 
 	gfx.EndFrame();
 }

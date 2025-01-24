@@ -15,7 +15,7 @@ PSOut main(float3 pos : POSITION, float2 tc : TEXCOORD)
 {
     PSOut psOut;
     psOut.position = mul(buf.proj, float4(pos, 1.0f));
-    psOut.tc = tc;
+    psOut.tc = float2(tc.x, 1.0f - tc.y);
     
     return psOut;
 }

@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <ranges>
 #include <vector>
+#include <cassert>
 
 using namespace Microsoft::WRL;
 using namespace DirectX;
@@ -325,7 +326,7 @@ void Graphics::StartUp(Window& wnd) {
 		{
 			auto heapProps = CD3DX12_HEAP_PROPERTIES{ D3D12_HEAP_TYPE_DEFAULT };
 			auto resDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-				DXGI_FORMAT_B8G8R8A8_UNORM,
+				DXGI_FORMAT_R32G32B32A32_FLOAT,
 				width,
 				height,
 				1u,
