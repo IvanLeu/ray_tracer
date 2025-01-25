@@ -34,8 +34,7 @@ public:
 private:
 	void StartUp(Window& wnd);
 	void ShutDown();
-	bool InitImGui(Window& wnd);
-	void CleanUpImGui() const;
+	void InitImGuiGfx();
 private:
 #ifdef _DEBUG
 	Microsoft::WRL::ComPtr<ID3D12Debug1> pDebug;
@@ -68,6 +67,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> pTexture;
 	Microsoft::WRL::ComPtr<ID3D12Resource> pUploadTexture;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> srvHeap;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> imguiHeap;
 	D3D12_SUBRESOURCE_DATA textureData;
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 	D3D12_INDEX_BUFFER_VIEW indexBufferView;

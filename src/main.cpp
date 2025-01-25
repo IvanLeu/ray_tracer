@@ -9,6 +9,9 @@ int CALLBACK WinMain(
 	try {
 		return Application{}.Run();
 	}
+	catch (std::exception& e) {
+		MessageBox(nullptr, e.what(), "An exception occured", MB_OK | MB_ICONEXCLAMATION | MB_TASKMODAL);
+	}
 	catch (...) {
 		MessageBox(nullptr, "No details available", "Unknown Exception", MB_OK | MB_ICONEXCLAMATION | MB_TASKMODAL);
 	}

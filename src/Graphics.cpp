@@ -38,43 +38,32 @@ Graphics::Graphics(Window& wnd)
 	rect = CD3DX12_RECT(0, 0, LONG_MAX, LONG_MAX);
 	proj = XMMatrixTranspose(XMMatrixScaling(1.0f, float(width / height), 1.0f));
 	StartUp(wnd);
-	if (!InitImGui(wnd)) {
-		throw std::runtime_error("Failed to initialize ImGui");
-	}
+	InitImGuiGfx();
 }
 
-bool Graphics::InitImGui(Window& wnd) {
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
+void Graphics::InitImGuiGfx()
+{
+	D3D12_DESCRIPTOR_HEAP_DESC desc = {
+		.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+		.NumDescriptors = 1,
+		.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
+		.NodeMask = 0
+	};
 
-	ImGui::StyleColorsDark();
-
-	if (!ImGui_ImplWin32_Init(wnd.GetHandle())) {
-		return false;
-	}
+	ThrowIfFailed(pDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&imguiHeap)));
 
 	ImGui_ImplDX12_InitInfo init_info;
 	init_info.Device = pDevice.Get();
 	init_info.NumFramesInFlight = nBuffers;
 	init_info.RTVFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
-	init_info.SrvDescriptorHeap = srvHeap.Get();
-	init_info.LegacySingleSrvCpuDescriptor = srvHeap->GetCPUDescriptorHandleForHeapStart();
-	init_info.LegacySingleSrvGpuDescriptor = srvHeap->GetGPUDescriptorHandleForHeapStart();
+	init_info.SrvDescriptorHeap = imguiHeap.Get();
+	init_info.LegacySingleSrvCpuDescriptor = imguiHeap->GetCPUDescriptorHandleForHeapStart();
+	init_info.LegacySingleSrvGpuDescriptor = imguiHeap->GetGPUDescriptorHandleForHeapStart();
 	init_info.CommandQueue = pCommandQueue.Get();
 
 	if (!ImGui_ImplDX12_Init(&init_info)) {
-		return false;
+		throw std::runtime_error("Failed to initialize ImGui");
 	}
-
-	return true;
-}
-
-void Graphics::CleanUpImGui() const
-{
-	ImGui_ImplDX12_Shutdown();
-	ImGui_ImplWin32_Shutdown();
-	ImGui::DestroyContext();
 }
 
 void Graphics::StartUp(Window& wnd) {
@@ -429,7 +418,7 @@ void Graphics::ShutDown()
 
 Graphics::~Graphics()
 {
-	CleanUpImGui();
+	ImGui_ImplDX12_Shutdown();
 	ShutDown();
 }
 
@@ -445,10 +434,6 @@ void Graphics::EndFrame()
 {
 	ThrowIfFailed(pCommandAllocator->Reset());
 	ThrowIfFailed(pCommandList->Reset(pCommandAllocator.Get(), nullptr));
-
-	// Render ImGui data
-	ImGui::Render();
-	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), pCommandList.Get());
 
 	// Update the texture
 	{
@@ -493,6 +478,11 @@ void Graphics::EndFrame()
 
 	pCommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 	pCommandList->DrawIndexedInstanced(nIndices, 1, 0, 0, 0);
+
+	// Render ImGui data
+	pCommandList->SetDescriptorHeaps(1, imguiHeap.GetAddressOf());
+	ImGui::Render();
+	ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), pCommandList.Get());
 
 	{
 		auto barrier = CD3DX12_RESOURCE_BARRIER::Transition(pRenderTargets[frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);

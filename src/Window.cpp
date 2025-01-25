@@ -1,6 +1,10 @@
 #include "Window.h"
 #include <windowsx.h>
 #include <assert.h>
+#include <stdexcept>
+
+#include "backends\imgui_impl_win32.h"
+#include "imgui.h"
 
 Window::Window(int width_in, int height_in, const char* name)
 	:
@@ -56,10 +60,15 @@ Window::Window(int width_in, int height_in, const char* name)
 	}
 
 	ShowWindow(hWnd, SW_SHOWDEFAULT);
+
+	if (!ImGui_ImplWin32_Init(hWnd)) {
+		throw std::runtime_error("Failed to initialize ImGui");
+	}
 }
 
 Window::~Window() noexcept
 {
+	ImGui_ImplWin32_Shutdown();
 	DestroyWindow(hWnd);
 	UnregisterClass(windowClassName, hInst);
 }
@@ -129,8 +138,19 @@ LRESULT CALLBACK Window::HandleMsgThunk(HWND hwnd, UINT msg, WPARAM wparam, LPAR
 	return pWnd->HandleMsg(hwnd, msg, wparam, lparam);
 }
 
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 LRESULT Window::HandleMsg(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) noexcept
 {
+	if (!pInputState) {
+		return DefWindowProc(hwnd, msg, wparam, lparam);
+	}
+
+	if (ImGui_ImplWin32_WndProcHandler(hwnd, msg, wparam, lparam))
+		return true;
+
+	const auto& imio = ImGui::GetIO();
+
 	switch (msg)
 	{
 	case WM_ERASEBKGND:
@@ -149,93 +169,125 @@ LRESULT Window::HandleMsg(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) noe
 		// TODO: event to for window resize
 	} break;
 	case WM_KILLFOCUS: {
-		if (pInputState != nullptr) {
-			pInputState->kbd.ClearState();
-		}
+		pInputState->kbd.ClearState();
 	} break;
 	case WM_KEYDOWN:
 	case WM_SYSKEYDOWN: {
-		if (pInputState != nullptr) {
-			if (!(lparam & 0x40000000) || pInputState->kbd.AutorepeatEnabled()) {
-				pInputState->kbd.OnKeyPressed(static_cast<unsigned char>(wparam));
-			}
+		if (imio.WantCaptureKeyboard) {
+			break;
 		}
+
+		if (!(lparam & 0x40000000) || pInputState->kbd.AutorepeatEnabled()) {
+			pInputState->kbd.OnKeyPressed(static_cast<unsigned char>(wparam));
+		}
+
 	} break;
 	case WM_KEYUP:
 	case WM_SYSKEYUP: {
-		if (pInputState != nullptr) {
-			pInputState->kbd.OnKeyReleased(static_cast<unsigned char>(wparam));
+		if (imio.WantCaptureKeyboard) {
+			break;
 		}
+
+		pInputState->kbd.OnKeyReleased(static_cast<unsigned char>(wparam));
+
 	} break;
 	case WM_CHAR: {
-		if (pInputState != nullptr) {
-			pInputState->kbd.OnChar(static_cast<unsigned char>(wparam));
+		if (imio.WantCaptureKeyboard) {
+			break;
 		}
+
+		pInputState->kbd.OnChar(static_cast<unsigned char>(wparam));
+
 	} break;
 	case WM_MOUSEMOVE: {
-		if (pInputState != nullptr) {
-			const POINTS pt = MAKEPOINTS(lparam);
+		const POINTS pt = MAKEPOINTS(lparam);
 
-			if (pt.x >= 0 && pt.x < width && pt.y >= 0 && pt.y < height) {
+		if (pt.x >= 0 && pt.x < width && pt.y >= 0 && pt.y < height) {
+
+			if (imio.WantCaptureMouse) {
+				break;
+			}
+
+			pInputState->mouse.OnMouseMove(pt.x, pt.y);
+			if (!pInputState->mouse.IsInWindow()) {
+				SetCapture(hWnd);
+				pInputState->mouse.OnMouseEnter();
+			}
+		}
+		else {
+			if (wparam & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON)) {
 				pInputState->mouse.OnMouseMove(pt.x, pt.y);
-				if (!pInputState->mouse.IsInWindow()) {
-					SetCapture(hWnd);
-					pInputState->mouse.OnMouseEnter();
-				}
 			}
 			else {
-				if (wparam & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON)) {
-					pInputState->mouse.OnMouseMove(pt.x, pt.y);
-				}
-				else {
-					ReleaseCapture();
-					pInputState->mouse.OnMouseLeave();
-				}
+				ReleaseCapture();
+				pInputState->mouse.OnMouseLeave();
 			}
 		}
+		
 	} break;
 	case WM_MOUSEWHEEL: {
-		if (pInputState != nullptr) {
-			const int zdelta = GET_WHEEL_DELTA_WPARAM(wparam);
-			const POINTS pt = MAKEPOINTS(lparam);
-			pInputState->mouse.OnWheelDelta(pt.x, pt.y, zdelta);
+		if (imio.WantCaptureMouse) {
+			break;
 		}
+
+		const int zdelta = GET_WHEEL_DELTA_WPARAM(wparam);
+		const POINTS pt = MAKEPOINTS(lparam);
+		pInputState->mouse.OnWheelDelta(pt.x, pt.y, zdelta);
+
 	} break;
 	case WM_LBUTTONDOWN: {
-		if (pInputState != nullptr) {
-			const POINTS pt = MAKEPOINTS(lparam);
-			pInputState->mouse.OnLeftPressed(pt.x, pt.y);
+		if (imio.WantCaptureMouse) {
+			break;
 		}
+
+		const POINTS pt = MAKEPOINTS(lparam);
+		pInputState->mouse.OnLeftPressed(pt.x, pt.y);
+		
 	} break;
 	case WM_MBUTTONDOWN: {
-		if (pInputState != nullptr) {
-			const POINTS pt = MAKEPOINTS(lparam);
-			pInputState->mouse.OnMiddlePressed(pt.x, pt.y);
+		if (imio.WantCaptureMouse) {
+			break;
 		}
+
+		const POINTS pt = MAKEPOINTS(lparam);
+		pInputState->mouse.OnMiddlePressed(pt.x, pt.y);
+		
 	} break;
 	case WM_RBUTTONDOWN: {
-		if (pInputState != nullptr) {
-			const POINTS pt = MAKEPOINTS(lparam);
-			pInputState->mouse.OnRightPressed(pt.x, pt.y);
+		if (imio.WantCaptureMouse) {
+			break;
 		}
+
+		const POINTS pt = MAKEPOINTS(lparam);
+		pInputState->mouse.OnRightPressed(pt.x, pt.y);
+		
 	} break;
 	case WM_LBUTTONUP: {
-		if (pInputState != nullptr) {
-			const POINTS pt = MAKEPOINTS(lparam);
-			pInputState->mouse.OnLeftReleased(pt.x, pt.y);
+		if (imio.WantCaptureMouse) {
+			break;
 		}
+
+		const POINTS pt = MAKEPOINTS(lparam);
+		pInputState->mouse.OnLeftReleased(pt.x, pt.y);
+		
 	} break;
 	case WM_MBUTTONUP: {
-		if (pInputState != nullptr) {
-			const POINTS pt = MAKEPOINTS(lparam);
-			pInputState->mouse.OnMiddleReleased(pt.x, pt.y);
+		if (imio.WantCaptureMouse) {
+			break;
 		}
+
+		const POINTS pt = MAKEPOINTS(lparam);
+		pInputState->mouse.OnMiddleReleased(pt.x, pt.y);
+		
 	} break;
 	case WM_RBUTTONUP: {
-		if (pInputState != nullptr) {
-			const POINTS pt = MAKEPOINTS(lparam);
-			pInputState->mouse.OnRightReleased(pt.x, pt.y);
+		if (imio.WantCaptureMouse) {
+			break;
 		}
+
+		const POINTS pt = MAKEPOINTS(lparam);
+		pInputState->mouse.OnRightReleased(pt.x, pt.y);
+		
 	} break;
 	}
 

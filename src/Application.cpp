@@ -33,10 +33,14 @@ void Application::OnUpdate()
 
 void Application::OnRender()
 {
+	float dt = 1.0f;
 	gfx.BeginFrame();
-	
-	bool showDemo = true;
-	ImGui::ShowDemoWindow(&showDemo);
+
+	ImGui::Begin("Menu");
+
+	ImGui::Text("Last frame time: %.2fms", dt);
+
+	ImGui::End();
 
 	for (int y = 100; y < 200; ++y) {
 		for (int x = 100; x < 200; ++x) {
@@ -51,4 +55,6 @@ void Application::OnRender()
 	}
 
 	gfx.EndFrame();
+
+	
 }

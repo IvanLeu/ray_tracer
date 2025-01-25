@@ -1,6 +1,7 @@
 #include "Window.h"
 #include "Input.h"
 #include "Graphics.h"
+#include "ImguiManager.h"
 #include <memory>
 
 class Application {
@@ -14,6 +15,7 @@ private:
 	void OnUpdate();
 	void OnRender();
 private:
+	ImguiManager manager;
 	bool running = true;
 	Window wnd;
 	Graphics gfx{ wnd };
