@@ -15,7 +15,7 @@ public:
 	Graphics(const Graphics&) = delete;
 	Graphics& operator=(const Graphics&) = delete;
 	~Graphics();
-	void BeginFrame();
+	void BeginFrame(DirectX::XMFLOAT4 color);
 	void EndFrame();
 	inline void PutPixel(int x, int y, DirectX::XMFLOAT4 color)
 	{
@@ -41,7 +41,6 @@ private:
 #endif
 	DirectX::XMMATRIX proj;
 	static constexpr UINT nBuffers = 2;
-	static constexpr DirectX::XMFLOAT4 clearTextureColor{ 1.0f, 0.0f, 0.0f, 1.0f };
 	int width;
 	int height;
 	UINT rtvIncrementSize = 0;

@@ -15,6 +15,7 @@ public:
 private:
 	void OnUpdate();
 	void OnRender();
+	DirectX::XMFLOAT4 PerPixel(DirectX::XMFLOAT3 coord) const;
 private:
 	ImguiManager manager;
 	float lastRenderTime = 0.0f;
@@ -23,4 +24,8 @@ private:
 	Window wnd;
 	Graphics gfx{ wnd };
 	std::shared_ptr<InputState> pInputState;
+	// Scene
+	DirectX::XMFLOAT4 clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+	DirectX::XMFLOAT3 camera = { 0.0f, 0.0f, -0.5f };
+	float radius = 0.5f;
 };
