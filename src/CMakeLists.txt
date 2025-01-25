@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.26)
 
 set(sources
+	"${CMAKE_CURRENT_SOURCE_DIR}/Timer.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/Timer.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/ImguiManager.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/ImguiManager.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/Graphics.h"

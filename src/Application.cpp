@@ -1,6 +1,8 @@
 #include "Application.h"
 #include "imgui.h"
 
+#include <chrono>
+
 Application::Application()
 	:
 	wnd(1280, 720, "Ray Tracer App"),
@@ -33,12 +35,12 @@ void Application::OnUpdate()
 
 void Application::OnRender()
 {
-	float dt = 1.0f;
+	timer.Mark();
 	gfx.BeginFrame();
 
-	ImGui::Begin("Menu");
+	ImGui::Begin("Settings");
 
-	ImGui::Text("Last frame time: %.2fms", dt);
+	ImGui::Text("Last render: %.3fms", lastRenderTime);
 
 	ImGui::End();
 
@@ -56,5 +58,5 @@ void Application::OnRender()
 
 	gfx.EndFrame();
 
-	
+	lastRenderTime = timer.Mark();
 }

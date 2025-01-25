@@ -2,6 +2,7 @@
 #include "Input.h"
 #include "Graphics.h"
 #include "ImguiManager.h"
+#include "Timer.h"
 #include <memory>
 
 class Application {
@@ -16,6 +17,8 @@ private:
 	void OnRender();
 private:
 	ImguiManager manager;
+	float lastRenderTime = 0.0f;
+	Timer timer;
 	bool running = true;
 	Window wnd;
 	Graphics gfx{ wnd };
