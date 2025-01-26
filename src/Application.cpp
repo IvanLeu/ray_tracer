@@ -41,16 +41,15 @@ void Application::OnRender()
 	ImGui::Begin("Settings");
 
 	ImGui::Text("Last render: %.3fms", lastRenderTime);
-	ImGui::SliderFloat("Radius", &radius, 1.0f, 10.0f);
+	ImGui::SliderFloat("Radius", &radius, 0.5f, 1.5f);
 
 	ImGui::End();
 
 	for (int y = 0; y < wnd.GetHeight(); ++y) {
 		for (int x = 0; x < wnd.GetWidth(); ++x) {
-			DirectX::XMFLOAT3 coord = { (float)x / (float)wnd.GetWidth(), (float)y / (float)wnd.GetHeight(), 0.0f };
+			DirectX::XMFLOAT2 coord = { (float)x / (float)wnd.GetWidth(), (float)y / (float)wnd.GetHeight() };
 			coord.x = coord.x * 2.0f - 1.0f;
 			coord.y = coord.y * 2.0f - 1.0f;
-			coord.z = coord.z * 2.0f - 1.0f;
 			gfx.PutPixel(x, y, PerPixel(coord));
 		}
 	}
@@ -60,21 +59,21 @@ void Application::OnRender()
 	lastRenderTime = timer.Mark();
 }
 
-DirectX::XMFLOAT4 Application::PerPixel(DirectX::XMFLOAT3 coord) const
+DirectX::XMFLOAT4 Application::PerPixel(DirectX::XMFLOAT2 coord) const
 {
+	coord.x *= (float)wnd.GetWidth() / (float)wnd.GetHeight();
+
 	DirectX::XMFLOAT3 dir = { coord.x, coord.y, 1.0f };
 
-	float a = dir.x * dir.x + dir.y * dir.y + dir.z + dir.z;
+	float a = dir.x * dir.x + dir.y * dir.y + dir.z * dir.z;
 	float b = 2.0f * (camera.x * dir.x + camera.y * dir.y + camera.z * dir.z);
 	float c = camera.x * camera.x + camera.y * camera.y + camera.z * camera.z - radius * radius;
 
-	float D = b * b - 4 * a * c;
+	float D = b * b - 4.0f * a * c;
 
-	if (D < 0.0f) {
-		return clearColor;
-	}
-	else {
+	if (D >= 0.0f) {
 		return { 1.0f, 0.0f, 1.0f, 1.0f };
 	}
 
+	return clearColor;
 }
