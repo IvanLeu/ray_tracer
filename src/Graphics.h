@@ -31,6 +31,8 @@ public:
 
 		return  pixels[y * width + x];
 	}
+	inline int GetWidth() const noexcept { return width; }
+	inline int GetHeight() const noexcept { return height; }
 private:
 	void StartUp(Window& wnd);
 	void ShutDown();

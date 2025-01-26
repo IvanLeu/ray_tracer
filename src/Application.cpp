@@ -1,5 +1,6 @@
 #include "Application.h"
 #include "imgui.h"
+#include "VectorUtils.h"
 
 #include <chrono>
 
@@ -65,9 +66,9 @@ DirectX::XMFLOAT4 Application::PerPixel(DirectX::XMFLOAT2 coord) const
 
 	DirectX::XMFLOAT3 dir = { coord.x, coord.y, 1.0f };
 
-	float a = dir.x * dir.x + dir.y * dir.y + dir.z * dir.z;
-	float b = 2.0f * (camera.x * dir.x + camera.y * dir.y + camera.z * dir.z);
-	float c = camera.x * camera.x + camera.y * camera.y + camera.z * camera.z - radius * radius;
+	float a = Utils::Dot(dir, dir);
+	float b = 2.0f * Utils::Dot(camera, dir);
+	float c = Utils::Dot(camera, camera) - radius * radius;
 
 	float D = b * b - 4.0f * a * c;
 
