@@ -26,6 +26,9 @@ private:
 	std::shared_ptr<InputState> pInputState;
 	// Scene
 	DirectX::XMFLOAT4 clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-	DirectX::XMFLOAT3 camera = { 0.0f, 0.0f, -1.0f };
+	DirectX::XMFLOAT4 sphereColor = { 1.0f, 0.0f, 1.0f, 1.0f };
+	DirectX::XMFLOAT3 cameraPos = { 0.0f, 0.0f, -1.0f };
+	DirectX::XMFLOAT3 sphereOrigin = { 0.0f, 0.0f, 0.0f };
+	DirectX::XMFLOAT3 lightDir = { -1.0f, 1.0f, 1.0f };
 	float radius = 0.5f;
 };

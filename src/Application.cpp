@@ -44,6 +44,9 @@ void Application::OnRender()
 	ImGui::Text("Last render: %.3fms", lastRenderTime);
 	ImGui::SliderFloat("Radius", &radius, 0.5f, 1.5f);
 
+	ImGui::ColorEdit3("Sphere color", &sphereColor.x);
+	ImGui::SliderFloat3("Light direction", &lightDir.x, -1.0f, 1.0f);
+
 	ImGui::End();
 
 	for (int y = 0; y < wnd.GetHeight(); ++y) {
@@ -67,14 +70,21 @@ DirectX::XMFLOAT4 Application::PerPixel(DirectX::XMFLOAT2 coord) const
 	DirectX::XMFLOAT3 dir = { coord.x, coord.y, 1.0f };
 
 	float a = Utils::Dot(dir, dir);
-	float b = 2.0f * Utils::Dot(camera, dir);
-	float c = Utils::Dot(camera, camera) - radius * radius;
+	float b = 2.0f * Utils::Dot(cameraPos, dir);
+	float c = Utils::Dot(cameraPos, cameraPos) - radius * radius;
 
 	float D = b * b - 4.0f * a * c;
 
-	if (D >= 0.0f) {
-		return { 1.0f, 0.0f, 1.0f, 1.0f };
+	if (D < 0.0f) {
+		return clearColor;
 	}
 
-	return clearColor;
+	const float closestHit = (-b - sqrt(D)) / (2.0f * a);
+	const DirectX::XMFLOAT3 hitPos = Utils::Add(cameraPos, Utils::Scale(dir, closestHit));
+	const DirectX::XMFLOAT3 normal = Utils::Normalize(hitPos);
+
+	const float f = max(Utils::Dot(normal, Utils::Normalize(Utils::Negate(lightDir))), 0.0f);
+	const DirectX::XMFLOAT4 finalColor = { sphereColor.x * f, sphereColor.y * f, sphereColor.z * f, 1.0f };
+
+	return finalColor;
 }

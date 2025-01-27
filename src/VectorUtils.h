@@ -25,4 +25,36 @@ namespace Utils
 		float length = Magnitude(v);
 		return { v.x / length, v.y / length, v.z / length };
 	}
+
+	inline DirectX::XMFLOAT3 Subtract(const DirectX::XMFLOAT3& v1, const DirectX::XMFLOAT3& v2) {
+		return {
+			v1.x - v2.x,
+			v1.y - v2.y,
+			v1.z - v2.z,
+		};
+	}
+
+	inline DirectX::XMFLOAT3 Add(const DirectX::XMFLOAT3& v1, const DirectX::XMFLOAT3& v2) {
+		return {
+			v1.x + v2.x,
+			v1.y + v2.y,
+			v1.z + v2.z,
+		};
+	}
+
+	inline DirectX::XMFLOAT3 Scale(const DirectX::XMFLOAT3& v1, float scalar) {
+		return {
+			v1.x * scalar,
+			v1.y * scalar,
+			v1.z * scalar,
+		};
+	}
+
+	inline DirectX::XMFLOAT3 Negate(const DirectX::XMFLOAT3& v1) {
+		return {
+			-v1.x,
+			-v1.y,
+			-v1.z,
+		};
+	}
 }
