@@ -61,6 +61,17 @@ Window::Window(int width_in, int height_in, const char* name)
 
 	ShowWindow(hWnd, SW_SHOWDEFAULT);
 
+	// init raw devices
+	RAWINPUTDEVICE rid;
+	rid.usUsagePage = 0x01;
+	rid.usUsage = 0x02;
+	rid.dwFlags = 0;
+	rid.hwndTarget = nullptr;
+
+	if (RegisterRawInputDevices(&rid, 1, sizeof(rid)) == FALSE) {
+		throw std::runtime_error("Failed to initialize Raw input devices");
+	}
+
 	if (!ImGui_ImplWin32_Init(hWnd)) {
 		throw std::runtime_error("Failed to initialize ImGui");
 	}
@@ -110,6 +121,60 @@ void Window::BindInputState(std::shared_ptr<InputState> input) noexcept {
 HWND Window::GetHandle() const
 {
 	return hWnd;
+}
+
+bool Window::CursorEnabled() const noexcept
+{
+	return cursorEnabled;
+}
+
+void Window::ConfineCursor() const
+{
+	RECT rect;
+	GetClientRect(hWnd, &rect);
+	MapWindowPoints(hWnd, nullptr, reinterpret_cast<POINT*>(&rect), 2);
+	ClipCursor(&rect);
+}
+
+void Window::FreeCursor() const
+{
+	ClipCursor(nullptr);
+}
+
+void Window::ShowCursor() const
+{
+	while (::ShowCursor(TRUE) < 0);
+}
+
+void Window::HideCursor() const
+{
+	while (::ShowCursor(FALSE) >= 0);
+}
+
+void Window::EnableImGuiMouse() const
+{
+	ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+}
+
+void Window::DisableImGuiMouse() const
+{
+	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouse;
+}
+
+void Window::EnableCursor() noexcept
+{
+	cursorEnabled = true;
+	FreeCursor();
+	ShowCursor();
+	EnableImGuiMouse();
+}
+
+void Window::DisableCursor() noexcept
+{
+	cursorEnabled = false;
+	ConfineCursor();
+	HideCursor();
+	DisableImGuiMouse();
 }
 
 LRESULT CALLBACK Window::HandleMsgSetup(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) noexcept
@@ -168,6 +233,18 @@ LRESULT Window::HandleMsg(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) noe
 		
 		// TODO: event to for window resize
 	} break;
+	case WM_ACTIVATE: {
+		if (!CursorEnabled()) {
+			if (wparam & WA_ACTIVE) {
+				ConfineCursor();
+				HideCursor();
+			}
+			else {
+				FreeCursor();
+				ShowCursor();
+			}
+		}
+	}break;
 	case WM_KILLFOCUS: {
 		pInputState->kbd.ClearState();
 	} break;
@@ -202,12 +279,23 @@ LRESULT Window::HandleMsg(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) noe
 	case WM_MOUSEMOVE: {
 		const POINTS pt = MAKEPOINTS(lparam);
 
-		if (pt.x >= 0 && pt.x < width && pt.y >= 0 && pt.y < height) {
+		if (imio.WantCaptureMouse) {
+			break;
+		}
 
-			if (imio.WantCaptureMouse) {
-				break;
+		if (!cursorEnabled)
+		{
+			if (!pInputState->mouse.IsInWindow())
+			{
+				SetCapture(hWnd);
+				pInputState->mouse.OnMouseEnter();
+				HideCursor();
 			}
+			break;
+		}
 
+
+		if (pt.x >= 0 && pt.x < width && pt.y >= 0 && pt.y < height) {
 			pInputState->mouse.OnMouseMove(pt.x, pt.y);
 			if (!pInputState->mouse.IsInWindow()) {
 				SetCapture(hWnd);
@@ -236,8 +324,14 @@ LRESULT Window::HandleMsg(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) noe
 
 	} break;
 	case WM_LBUTTONDOWN: {
+		SetForegroundWindow(hWnd);
 		if (imio.WantCaptureMouse) {
 			break;
+		}
+
+		if (!cursorEnabled) {
+			ConfineCursor();
+			HideCursor();
 		}
 
 		const POINTS pt = MAKEPOINTS(lparam);
@@ -288,6 +382,40 @@ LRESULT Window::HandleMsg(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) noe
 		const POINTS pt = MAKEPOINTS(lparam);
 		pInputState->mouse.OnRightReleased(pt.x, pt.y);
 		
+	} break;
+	case WM_INPUT: {
+		if (!pInputState->mouse.RawEnabled()) {
+			break;
+		}
+
+		UINT size;
+
+		if (GetRawInputData(
+			reinterpret_cast<HRAWINPUT>(lparam),
+			RID_INPUT,
+			nullptr,
+			&size,
+			sizeof(RAWINPUTHEADER)) == -1) {
+			break;
+		}
+
+		rawBuffer.resize(size);
+
+		if (GetRawInputData(
+			reinterpret_cast<HRAWINPUT>(lparam),
+			RID_INPUT,
+			rawBuffer.data(),
+			&size,
+			sizeof(RAWINPUTHEADER)) != size) {
+			break;
+		}
+
+		auto& raw = reinterpret_cast<const RAWINPUT&>(*rawBuffer.data());
+
+		if (raw.header.dwType == RIM_TYPEMOUSE && (raw.data.mouse.lLastX != 0 || raw.data.mouse.lLastY != 0)) {
+			pInputState->mouse.OnRawDelta(raw.data.mouse.lLastX, raw.data.mouse.lLastY);
+		}
+
 	} break;
 	}
 

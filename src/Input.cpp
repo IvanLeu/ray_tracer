@@ -147,6 +147,16 @@ std::optional<MouseState::Event> MouseState::Read() noexcept
     return {};
 }
 
+std::optional<MouseState::RawDelta> MouseState::ReadRawDelta() noexcept
+{
+    if (!rawBuffer.empty()) {
+        const auto r = rawBuffer.front();
+        rawBuffer.pop();
+        return r;
+    }
+    return {};
+}
+
 bool MouseState::IsEmpty() const noexcept
 {
     return buffer.empty();
@@ -155,6 +165,21 @@ bool MouseState::IsEmpty() const noexcept
 void MouseState::Clear() noexcept
 {
     buffer = std::queue<Event>();
+}
+
+bool MouseState::RawEnabled() const noexcept
+{
+    return rawEnabled;
+}
+
+void MouseState::EnableRaw() noexcept
+{
+    rawEnabled = true;
+}
+
+void MouseState::DisableRaw() noexcept
+{
+    rawEnabled = false;
 }
 
 void MouseState::OnMouseMove(int x_in, int y_in) noexcept
@@ -246,9 +271,22 @@ void MouseState::OnWheelDelta([[maybe_unused]] int x_in, [[maybe_unused]] int y_
     }
 }
 
+void MouseState::OnRawDelta(int deltax, int deltay) noexcept
+{
+    rawBuffer.push({ deltax, deltay });
+    TrimRawInputBuffer();
+}
+
 void MouseState::TrimBuffer() noexcept
 {
     while (buffer.size() > bufferSize) {
         buffer.pop();
+    }
+}
+
+void MouseState::TrimRawInputBuffer() noexcept
+{
+    while (rawBuffer.size() > bufferSize) {
+        rawBuffer.pop();
     }
 }

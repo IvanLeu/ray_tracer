@@ -31,6 +31,23 @@ Application::~Application()
 
 void Application::OnUpdate()
 {
+	while (const auto e = pInputState->kbd.ReadKey()) {
+		if (!e->IsPress()) {
+			continue;
+		}
+		switch (e->GetCode()) {
+		case VK_ESCAPE:
+			if (!wnd.CursorEnabled()) {
+				wnd.EnableCursor();
+				pInputState->mouse.DisableRaw();
+			}
+			else {
+				wnd.DisableCursor();
+				pInputState->mouse.EnableRaw();
+			}
+			break;
+		}
+	}
 
 }
 
