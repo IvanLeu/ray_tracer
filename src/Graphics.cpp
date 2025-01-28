@@ -422,12 +422,12 @@ Graphics::~Graphics()
 	ShutDown();
 }
 
-void Graphics::BeginFrame(DirectX::XMFLOAT4 color)
+void Graphics::BeginFrame()
 {
 	ImGui_ImplWin32_NewFrame();
 	ImGui_ImplDX12_NewFrame();
 	ImGui::NewFrame();
-	std::ranges::fill_n(pixels.get(), width * height, color);
+	std::ranges::fill_n(pixels.get(), width * height, clearTextureColor);
 }
 
 void Graphics::EndFrame()

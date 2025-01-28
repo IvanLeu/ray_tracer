@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.26)
 
 set(sources
+	"${CMAKE_CURRENT_SOURCE_DIR}/Ray.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/Camera.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/Camera.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/Renderer.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/Renderer.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/VectorUtils.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/Timer.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/Timer.cpp"

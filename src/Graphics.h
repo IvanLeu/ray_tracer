@@ -15,7 +15,7 @@ public:
 	Graphics(const Graphics&) = delete;
 	Graphics& operator=(const Graphics&) = delete;
 	~Graphics();
-	void BeginFrame(DirectX::XMFLOAT4 color);
+	void BeginFrame();
 	void EndFrame();
 	inline void PutPixel(int x, int y, DirectX::XMFLOAT4 color)
 	{
@@ -33,6 +33,7 @@ public:
 	}
 	inline int GetWidth() const noexcept { return width; }
 	inline int GetHeight() const noexcept { return height; }
+	inline void SetTextureClearColor(DirectX::XMFLOAT4 color) { clearTextureColor = color; }
 private:
 	void StartUp(Window& wnd);
 	void ShutDown();
@@ -45,6 +46,7 @@ private:
 	static constexpr UINT nBuffers = 2;
 	int width;
 	int height;
+	DirectX::XMFLOAT4 clearTextureColor = { 0.0f, 0.0f, 0.0f, 1.0f };
 	UINT rtvIncrementSize = 0;
 	UINT fenceValue = 0;
 	UINT nIndices = 0;
