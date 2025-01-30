@@ -6,11 +6,12 @@
 class Camera {
 public:
 	Camera(int width, int height, float fovAngleYDegrees, float nearClip, float farClip);
-	DirectX::XMMATRIX GetProjection() const noexcept;
-	DirectX::XMMATRIX GetInverseProjection() const noexcept;
-	DirectX::XMMATRIX GetView() const noexcept;
-	DirectX::XMMATRIX GetInverseView() const noexcept;
-	DirectX::XMVECTOR GetPosition() const noexcept;
+	const DirectX::XMMATRIX& GetProjection() const noexcept;
+	const DirectX::XMMATRIX& GetInverseProjection() const noexcept;
+	const DirectX::XMMATRIX& GetView() const noexcept;
+	const DirectX::XMMATRIX& GetInverseView() const noexcept;
+	const DirectX::XMVECTOR& GetPosition() const noexcept;
+	const DirectX::XMVECTOR& GetDirection() const noexcept;
 	const std::vector<DirectX::XMFLOAT3>& GetRayDirections() const noexcept;
 	void Move(float dt, DirectX::XMFLOAT3 v) noexcept;
 	void Rotate(float dt, float deltaX, float deltaY) noexcept;

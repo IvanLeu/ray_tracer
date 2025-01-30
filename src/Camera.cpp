@@ -121,27 +121,32 @@ void Camera::RecalculateView() noexcept
 	m_InverseView = XMMatrixInverse(&det, m_View);
 }
 
-DirectX::XMMATRIX Camera::GetInverseProjection() const noexcept
+const DirectX::XMMATRIX& Camera::GetInverseProjection() const noexcept
 {
 	return m_InverseProjection;
 }
 
-DirectX::XMMATRIX Camera::GetView() const noexcept
+const DirectX::XMMATRIX& Camera::GetView() const noexcept
 {
 	return m_View;
 }
 
-DirectX::XMMATRIX Camera::GetInverseView() const noexcept
+const DirectX::XMMATRIX& Camera::GetInverseView() const noexcept
 {
 	return m_InverseView;
 }
 
-DirectX::XMVECTOR Camera::GetPosition() const noexcept
+const DirectX::XMVECTOR& Camera::GetPosition() const noexcept
 {
 	return m_Position;
 }
 
-DirectX::XMMATRIX Camera::GetProjection() const noexcept
+const DirectX::XMVECTOR& Camera::GetDirection() const noexcept
+{
+	return m_forwardDir;
+}
+
+const DirectX::XMMATRIX& Camera::GetProjection() const noexcept
 {
 	return m_Projection;
 }
