@@ -11,6 +11,22 @@ Application::Application()
 	camera(gfx.GetWidth(), gfx.GetHeight(), 45.0f, 0.1f, 100.0f)
 {
 	wnd.BindInputState(pInputState);
+
+	{
+		Sphere sphere;
+		sphere.position = { 0.0f, 0.0f, 0.0f };
+		sphere.albedo = { 1.0f, 0.0f, 1.0f, 1.0f };
+		sphere.radius = 0.5f;
+		scene.spheres.push_back(sphere);
+	}
+
+	{
+		Sphere sphere;
+		sphere.position = { 2.0f, 0.0f, 7.0f };
+		sphere.albedo = { 1.0f, 0.5f, 0.1f, 1.0f };
+		sphere.radius = 3.0f;
+		scene.spheres.push_back(sphere);
+	}
 }
 
 int Application::Run()
@@ -93,12 +109,26 @@ void Application::OnRender()
 	gfx.BeginFrame();
 
 	OnRenderUI();
-	renderer.Render(gfx, camera);
+	renderer.Render(gfx, scene, camera);
 
 	gfx.EndFrame();
 }
 
 void Application::OnRenderUI()
 {
+	ImGui::Begin("Scene");
+	for (size_t i = 0; i < scene.spheres.size(); ++i) {
+		ImGui::PushID(i);
+
+		ImGui::DragFloat3("Position", &scene.spheres[i].position.x, 0.1f);
+		ImGui::DragFloat("Radius", &scene.spheres[i].radius, 0.1f);
+		ImGui::ColorEdit4("Albedo", &scene.spheres[i].albedo.x);
+
+		ImGui::Separator();
+
+		ImGui::PopID();
+	}
+	ImGui::End();
+
 	renderer.RenderUI();
 }

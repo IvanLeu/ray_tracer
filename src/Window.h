@@ -5,6 +5,13 @@
 #include <optional>
 #include "Input.h"
 
+#ifdef max
+#undef max
+#endif
+#ifdef min
+#undef min
+#endif
+
 class Window {
 public:
 	Window(int width, int height, const char* name);

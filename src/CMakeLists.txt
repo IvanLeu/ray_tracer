@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.26)
 
 set(sources
+	"${CMAKE_CURRENT_SOURCE_DIR}/Scene.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/Ray.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/Camera.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/Camera.h"

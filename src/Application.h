@@ -4,6 +4,7 @@
 #include "ImguiManager.h"
 #include "Renderer.h"
 #include "Camera.h"
+#include "Scene.h"
 #include <memory>
 
 class Application {
@@ -25,5 +26,6 @@ private:
 	Renderer renderer{ gfx };
 	Camera camera;
 	Timer timer;
+	Scene scene;
 	std::shared_ptr<InputState> pInputState;
 };
