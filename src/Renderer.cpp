@@ -10,15 +10,16 @@ Renderer::Renderer(Graphics& gfx)
 	gfx.SetTextureClearColor(clearColor);
 }
 
-void Renderer::Render(Graphics& gfx)
+void Renderer::Render(Graphics& gfx, const Camera& camera)
 {
+	Ray ray;
+	DirectX::XMStoreFloat3(&ray.origin, camera.GetPosition());
+
 	timer.Mark();
 	for (int y = 0; y < m_Height; ++y) {
 		for (int x = 0; x < m_Width; ++x) {
-			DirectX::XMFLOAT2 coord = { (float)x / (float)m_Width, (float)y / (float)m_Height };
-			coord.x = coord.x * 2.0f - 1.0f;
-			coord.y = coord.y * 2.0f - 1.0f;
-			gfx.PutPixel(x, y, PerPixel(coord));
+			ray.direction = camera.GetRayDirections()[x + y * m_Width];
+			gfx.PutPixel(x, y, TraceRay(ray));
 		}
 	}
 	lastRenderTime = timer.Mark();
@@ -37,15 +38,11 @@ void Renderer::RenderUI()
 	ImGui::End();
 }
 
-DirectX::XMFLOAT4 Renderer::PerPixel(DirectX::XMFLOAT2 coord) const
+DirectX::XMFLOAT4 Renderer::TraceRay(const Ray& ray) const
 {
-	coord.x *= (float)m_Width / (float)m_Height;
-
-	DirectX::XMFLOAT3 dir = { coord.x, coord.y, 1.0f };
-
-	float a = Utils::Dot(dir, dir);
-	float b = 2.0f * Utils::Dot(cameraPos, dir);
-	float c = Utils::Dot(cameraPos, cameraPos) - radius * radius;
+	float a = Utils::Dot(ray.direction, ray.direction);
+	float b = 2.0f * Utils::Dot(ray.origin, ray.direction);
+	float c = Utils::Dot(ray.origin, ray.origin) - radius * radius;
 
 	float D = b * b - 4.0f * a * c;
 
@@ -54,7 +51,7 @@ DirectX::XMFLOAT4 Renderer::PerPixel(DirectX::XMFLOAT2 coord) const
 	}
 
 	const float closestHit = (-b - sqrt(D)) / (2.0f * a);
-	const DirectX::XMFLOAT3 hitPos = Utils::Add(cameraPos, Utils::Scale(dir, closestHit));
+	const DirectX::XMFLOAT3 hitPos = Utils::Add(ray.origin, Utils::Scale(ray.direction, closestHit));
 	const DirectX::XMFLOAT3 normal = Utils::Normalize(hitPos);
 
 	const float f = max(Utils::Dot(normal, Utils::Normalize(Utils::Negate(lightDir))), 0.0f);

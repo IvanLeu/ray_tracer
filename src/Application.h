@@ -3,6 +3,7 @@
 #include "Graphics.h"
 #include "ImguiManager.h"
 #include "Renderer.h"
+#include "Camera.h"
 #include <memory>
 
 class Application {
@@ -13,7 +14,7 @@ public:
 	int Run();
 	~Application();
 private:
-	void OnUpdate();
+	void OnUpdate(float dt);
 	void OnRender();
 	void OnRenderUI();
 private:
@@ -22,5 +23,7 @@ private:
 	Window wnd;
 	Graphics gfx{ wnd };
 	Renderer renderer{ gfx };
+	Camera camera;
+	Timer timer;
 	std::shared_ptr<InputState> pInputState;
 };

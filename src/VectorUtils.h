@@ -18,7 +18,7 @@ namespace Utils
 	}
 
 	inline float Magnitude(const DirectX::XMFLOAT3& v) {
-		return sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+		return (float)sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
 	}
 
 	inline DirectX::XMFLOAT3 Normalize(const DirectX::XMFLOAT3& v) {
@@ -56,5 +56,9 @@ namespace Utils
 			-v1.y,
 			-v1.z,
 		};
+	}
+
+	inline bool IsZero(const DirectX::XMFLOAT3 v) {
+		return v.x == 0 && v.y == 0 && v.z == 0;
 	}
 }
