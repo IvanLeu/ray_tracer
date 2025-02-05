@@ -11,7 +11,7 @@ Camera::Camera(int width, int height, float fovAngleYDegrees, float nearClip, fl
 	fovAngleY(fovAngleYDegrees),
 	nearClip(nearClip),
 	farClip(farClip),
-	m_Position(XMVectorSet(0.0f, 0.0f, -2.0f, 1.0f))
+	m_Position(XMVectorSet(0.0f, 0.0f, -6.0f, 1.0f))
 {
 	aspectRatio = (float)m_Width / (float)m_Height;
 	rayDirections.resize(m_Width * m_Height);

@@ -12,19 +12,27 @@ Application::Application()
 {
 	wnd.BindInputState(pInputState);
 
+	Material& orangeSphere = scene.materials.emplace_back();
+	orangeSphere.Albedo = { 1.0f, 0.55f, 0.0f, 1.0f };
+	orangeSphere.Roughness = 0.0f;
+
+	Material& blueSphere = scene.materials.emplace_back();
+	blueSphere.Albedo = { 0.2f, 0.3f, 1.0f, 1.0f };
+	blueSphere.Roughness = 0.1f;
+
 	{
 		Sphere sphere;
 		sphere.position = { 0.0f, 0.0f, 0.0f };
-		sphere.albedo = { 1.0f, 0.0f, 1.0f, 1.0f };
-		sphere.radius = 0.5f;
+		sphere.radius = 1.0f;
+		sphere.materialIndex = 0;
 		scene.spheres.push_back(sphere);
 	}
 
 	{
 		Sphere sphere;
-		sphere.position = { 2.0f, 0.0f, 7.0f };
-		sphere.albedo = { 1.0f, 0.5f, 0.1f, 1.0f };
-		sphere.radius = 3.0f;
+		sphere.position = { 0.0f, 101.0f, 0.0f };
+		sphere.radius = 100.0f;
+		sphere.materialIndex = 1;
 		scene.spheres.push_back(sphere);
 	}
 }
@@ -122,12 +130,26 @@ void Application::OnRenderUI()
 
 		ImGui::DragFloat3("Position", &scene.spheres[i].position.x, 0.1f);
 		ImGui::DragFloat("Radius", &scene.spheres[i].radius, 0.1f);
-		ImGui::ColorEdit4("Albedo", &scene.spheres[i].albedo.x);
+		ImGui::DragInt("Material ID", &scene.spheres[i].materialIndex, 1.0f, 0, (int)scene.materials.size() - 1);
 
 		ImGui::Separator();
 
 		ImGui::PopID();
 	}
+
+	ImGui::Text("Materials");
+	for (size_t i = 0; i < scene.materials.size(); ++i) {
+		ImGui::PushID((int)i);
+
+		ImGui::ColorEdit4("Albedo", &scene.materials[i].Albedo.x);
+		ImGui::DragFloat("Roughness", &scene.materials[i].Roughness, 0.005f, 0.0f, 1.0f);
+		ImGui::DragFloat("Mettalic", &scene.materials[i].Metallic, 0.005f, 0.0f, 1.0f);
+
+		ImGui::Separator();
+
+		ImGui::PopID();
+	}
+
 	ImGui::End();
 
 	renderer.RenderUI();

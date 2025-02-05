@@ -3,6 +3,7 @@
 #include <DirectXMath.h>
 #include <math.h>
 #include <algorithm>
+#include <random>
 
 namespace Utils 
 {
@@ -88,5 +89,13 @@ namespace Utils
 
 	inline DirectX::XMFLOAT4 ToFloat4(const DirectX::XMFLOAT3& v, float w) {
 		return { v.x, v.y, v.z, w };
+	}
+
+	inline DirectX::XMFLOAT3 RandomFloat3(float min, float max) {
+		static thread_local std::random_device rd;
+		static thread_local std::mt19937 generator(rd());
+		static thread_local std::uniform_real_distribution<float> dist(min, max);
+
+		return { dist(generator) , dist(generator), dist(generator) };
 	}
 }

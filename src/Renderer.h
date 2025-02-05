@@ -30,6 +30,6 @@ private:
 	int m_Height = 0;
 	float lastRenderTime = 0.0f;
 	// Scene
-	DirectX::XMFLOAT4 clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+	DirectX::XMFLOAT4 clearColor = { 0.6f, 0.8f, 0.9f, 1.0f };
 	DirectX::XMFLOAT3 lightDir = { -1.0f, 1.0f, 1.0f };
 };

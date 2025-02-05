@@ -52,7 +52,7 @@ DirectX::XMFLOAT4 Renderer::PerPixel(int x, int y) const
 	DirectX::XMFLOAT3 color = { 0.0f, 0.0f, 0.0f };
 	float multiplier = 1.0f;
 
-	int nBounces = 2;
+	int nBounces = 5;
 	for (int i = 0; i < nBounces; ++i) {
 		HitPayload payload = TraceRay(ray);
 
@@ -64,13 +64,15 @@ DirectX::XMFLOAT4 Renderer::PerPixel(int x, int y) const
 		const float f = std::max(Utils::Dot(payload.WorldNormal, Utils::Normalize(Utils::Negate(lightDir))), 0.0f);
 		
 		const Sphere& sphere = m_ActiveScene->spheres[payload.objectIndex];
-		auto sphereColor = Utils::Scale(Utils::ToFloat3(sphere.albedo), f);
+		const Material& material = m_ActiveScene->materials[sphere.materialIndex];
+		auto sphereColor = Utils::Scale(Utils::ToFloat3(material.Albedo), f);
 		color = Utils::Add(color, Utils::Scale(sphereColor, multiplier));
 
-		multiplier *= 0.7f;
+		multiplier *= 0.5f;
 
 		ray.origin = Utils::Add(payload.WorldPosition, Utils::Scale(payload.WorldNormal, 0.0001f));
-		ray.direction = Utils::Reflect(ray.direction, payload.WorldNormal);
+		ray.direction = Utils::Reflect(ray.direction, 
+			Utils::Add(payload.WorldNormal, Utils::Scale(Utils::RandomFloat3(-0.5f, 0.5f), material.Roughness)));
 	}
 
 	return Utils::ToFloat4(color, 1.0f);
