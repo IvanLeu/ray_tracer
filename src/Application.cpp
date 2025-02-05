@@ -118,7 +118,7 @@ void Application::OnRenderUI()
 {
 	ImGui::Begin("Scene");
 	for (size_t i = 0; i < scene.spheres.size(); ++i) {
-		ImGui::PushID(i);
+		ImGui::PushID((int)i);
 
 		ImGui::DragFloat3("Position", &scene.spheres[i].position.x, 0.1f);
 		ImGui::DragFloat("Radius", &scene.spheres[i].radius, 0.1f);

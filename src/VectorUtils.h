@@ -2,6 +2,7 @@
 
 #include <DirectXMath.h>
 #include <math.h>
+#include <algorithm>
 
 namespace Utils 
 {
@@ -58,7 +59,34 @@ namespace Utils
 		};
 	}
 
-	inline bool IsZero(const DirectX::XMFLOAT3 v) {
+	inline bool IsZero(const DirectX::XMFLOAT3& v) {
 		return v.x == 0 && v.y == 0 && v.z == 0;
+	}
+
+	inline DirectX::XMFLOAT4 Clamp(const DirectX::XMFLOAT4& v, const DirectX::XMFLOAT4& min, const DirectX::XMFLOAT4& max) {
+		return { std::clamp(v.x, min.x, max.x),
+				 std::clamp(v.y, min.y, max.y),
+				 std::clamp(v.z, min.z, max.z),
+				 std::clamp(v.w, min.w, max.w) };
+	}
+
+	inline DirectX::XMFLOAT4 Clamp(const DirectX::XMFLOAT4& v, float min, float max) {
+		return { std::clamp(v.x, min, max),
+				 std::clamp(v.y, min, max),
+				 std::clamp(v.z, min, max),
+				 std::clamp(v.w, min, max) };
+	}
+
+	inline DirectX::XMFLOAT3 Reflect(const DirectX::XMFLOAT3& v, const DirectX::XMFLOAT3& n) {
+		auto normal = Normalize(n);
+		return Subtract(v, Scale(normal, 2.0f * Dot(v, normal)));
+	}
+
+	inline DirectX::XMFLOAT3 ToFloat3(const DirectX::XMFLOAT4& v) {
+		return { v.x, v.y, v.z };
+	}
+
+	inline DirectX::XMFLOAT4 ToFloat4(const DirectX::XMFLOAT3& v, float w) {
+		return { v.x, v.y, v.z, w };
 	}
 }

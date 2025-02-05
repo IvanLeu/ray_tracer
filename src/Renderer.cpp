@@ -2,6 +2,8 @@
 #include "VectorUtils.h"
 #include "imgui.h"
 
+#include <chrono>
+
 Renderer::Renderer(Graphics& gfx)
 	:
 	m_Width(gfx.GetWidth()),
@@ -12,17 +14,23 @@ Renderer::Renderer(Graphics& gfx)
 
 void Renderer::Render(Graphics& gfx, const Scene& scene, const Camera& camera)
 {
-	Ray ray;
-	DirectX::XMStoreFloat3(&ray.origin, camera.GetPosition());
+	m_ActiveScene = &scene;
+	m_ActiveCamera = &camera;
 
-	timer.Mark();
+	auto start = std::chrono::high_resolution_clock::now();
+
 	for (int y = 0; y < m_Height; ++y) {
 		for (int x = 0; x < m_Width; ++x) {
-			ray.direction = camera.GetRayDirections()[x + y * m_Width];
-			gfx.PutPixel(x, y, TraceRay(scene, ray));
+
+			auto color = Utils::Clamp(PerPixel(x, y), 0.0f, 1.0f);
+			color.w = 1.0f;
+			gfx.PutPixel(x, y, color);
 		}
 	}
-	lastRenderTime = timer.Mark();
+
+	auto end = std::chrono::high_resolution_clock::now();
+
+	lastRenderTime = std::chrono::duration<float, std::milli>(end - start).count();
 }
 
 void Renderer::RenderUI()
@@ -35,12 +43,47 @@ void Renderer::RenderUI()
 	ImGui::End();
 }
 
-DirectX::XMFLOAT4 Renderer::TraceRay(const Scene& scene, const Ray& ray) const
+DirectX::XMFLOAT4 Renderer::PerPixel(int x, int y) const
 {
-	const Sphere* closestSphere = nullptr;
+	Ray ray;
+	DirectX::XMStoreFloat3(&ray.origin, m_ActiveCamera->GetPosition());
+	ray.direction = m_ActiveCamera->GetRayDirections()[x + y * m_Width];
+
+	DirectX::XMFLOAT3 color = { 0.0f, 0.0f, 0.0f };
+	float multiplier = 1.0f;
+
+	int nBounces = 2;
+	for (int i = 0; i < nBounces; ++i) {
+		HitPayload payload = TraceRay(ray);
+
+		if (payload.hitDistance < 0.0f) {
+			color = Utils::Add(color, Utils::Scale(Utils::ToFloat3(clearColor), multiplier));
+			break;
+		}
+
+		const float f = std::max(Utils::Dot(payload.WorldNormal, Utils::Normalize(Utils::Negate(lightDir))), 0.0f);
+		
+		const Sphere& sphere = m_ActiveScene->spheres[payload.objectIndex];
+		auto sphereColor = Utils::Scale(Utils::ToFloat3(sphere.albedo), f);
+		color = Utils::Add(color, Utils::Scale(sphereColor, multiplier));
+
+		multiplier *= 0.7f;
+
+		ray.origin = Utils::Add(payload.WorldPosition, Utils::Scale(payload.WorldNormal, 0.0001f));
+		ray.direction = Utils::Reflect(ray.direction, payload.WorldNormal);
+	}
+
+	return Utils::ToFloat4(color, 1.0f);
+}
+
+Renderer::HitPayload Renderer::TraceRay(const Ray& ray) const
+{
+	int closestSphere = -1;
 	float hitDistance = std::numeric_limits<float>::max();
 
-	for (const Sphere& sphere : scene.spheres) {
+	for (size_t i = 0; i < m_ActiveScene->spheres.size(); ++i) {
+		const Sphere& sphere = m_ActiveScene->spheres[i];
+
 		DirectX::XMFLOAT3 origin = Utils::Subtract(ray.origin, sphere.position);
 
 		float a = Utils::Dot(ray.direction, ray.direction);
@@ -54,23 +97,39 @@ DirectX::XMFLOAT4 Renderer::TraceRay(const Scene& scene, const Ray& ray) const
 		}
 
 		const float closestHit = (-b - sqrt(D)) / (2.0f * a);
-		if (closestHit < hitDistance) {
+		if (closestHit >= 0.0f && closestHit < hitDistance) {
 			hitDistance = closestHit;
-			closestSphere = &sphere;
+			closestSphere = (int)i;
 		}
 	}
 
-	if (!closestSphere) {
-		return clearColor;
+	if (closestSphere == -1) {
+		return Miss();
 	}
+	
+	return ClosestHit(ray, hitDistance, closestSphere);
+}
 
-	DirectX::XMFLOAT3 origin = Utils::Subtract(ray.origin, closestSphere->position);
+Renderer::HitPayload Renderer::ClosestHit(const Ray& ray, float hitDistance, int objectIndex) const
+{
+	HitPayload payload;
+	payload.hitDistance = hitDistance;
+	payload.objectIndex = objectIndex;
 
-	const DirectX::XMFLOAT3 hitPos = Utils::Add(origin, Utils::Scale(ray.direction, hitDistance));
-	const DirectX::XMFLOAT3 normal = Utils::Normalize(hitPos);
+	const Sphere& sphere = m_ActiveScene->spheres[objectIndex];
+	DirectX::XMFLOAT3 origin = Utils::Subtract(ray.origin, sphere.position);
 
-	const float f = std::max(Utils::Dot(normal, Utils::Normalize(Utils::Negate(lightDir))), 0.0f);
-	const DirectX::XMFLOAT4 finalColor = { closestSphere->albedo.x * f, closestSphere->albedo.y * f, closestSphere->albedo.z * f, 1.0f };
+	payload.WorldPosition = Utils::Add(origin, Utils::Scale(ray.direction, hitDistance));
+	payload.WorldNormal = Utils::Normalize(payload.WorldPosition);
 
-	return finalColor;
+	payload.WorldPosition = Utils::Add(payload.WorldPosition, sphere.position);
+
+	return payload;
+}
+
+Renderer::HitPayload Renderer::Miss() const
+{
+	HitPayload payload;
+	payload.hitDistance = -1.0f;
+	return payload;
 }
