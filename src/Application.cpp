@@ -109,7 +109,9 @@ void Application::OnUpdate(float dt)
 		camera.Rotate(dt, (float)deltaX, (float)deltaY);
 	}
 
-	camera.Update();
+	if (camera.Update()) {
+		renderer.ResetFrameIndex();
+	}
 }
 
 void Application::OnRender()

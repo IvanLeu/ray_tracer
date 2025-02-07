@@ -88,13 +88,17 @@ void Camera::RecalculateRayDirections() noexcept
 	}
 }
 
-void Camera::Update() noexcept
+bool Camera::Update() noexcept
 {
+	bool temp = moved;
+
 	if (moved) {
 		RecalculateView();
 		RecalculateRayDirections();
 		moved = false;
 	}
+
+	return temp;
 }
 
 void Camera::SetMoveSpeed(float speed) noexcept

@@ -7,7 +7,8 @@
 Renderer::Renderer(Graphics& gfx)
 	:
 	m_Width(gfx.GetWidth()),
-	m_Height(gfx.GetHeight())
+	m_Height(gfx.GetHeight()),
+	m_AccumulationData(new DirectX::XMFLOAT4[m_Width * m_Height])
 {
 	gfx.SetTextureClearColor(clearColor);
 }
@@ -17,13 +18,22 @@ void Renderer::Render(Graphics& gfx, const Scene& scene, const Camera& camera)
 	m_ActiveScene = &scene;
 	m_ActiveCamera = &camera;
 
+	if (m_FrameIndex == 1u) {
+		memset(m_AccumulationData.get(), 0, sizeof(DirectX::XMFLOAT4) * m_Width * m_Height);
+	}
+
 	auto start = std::chrono::high_resolution_clock::now();
 
 	for (int y = 0; y < m_Height; ++y) {
 		for (int x = 0; x < m_Width; ++x) {
 
-			auto color = Utils::Clamp(PerPixel(x, y), 0.0f, 1.0f);
+			auto color = PerPixel(x, y);
 			color.w = 1.0f;
+
+			m_AccumulationData[x + y * m_Width] = Utils::Add(m_AccumulationData[x + y * m_Width], color);
+			color = Utils::Scale(m_AccumulationData[x + y * m_Width], (1.0f / (float)m_FrameIndex));
+
+			color = Utils::Clamp(color, 0.0f, 1.0f);
 			gfx.PutPixel(x, y, color);
 		}
 	}
@@ -31,6 +41,11 @@ void Renderer::Render(Graphics& gfx, const Scene& scene, const Camera& camera)
 	auto end = std::chrono::high_resolution_clock::now();
 
 	lastRenderTime = std::chrono::duration<float, std::milli>(end - start).count();
+
+	if (m_Accumulate)
+		++m_FrameIndex;
+	else
+		m_FrameIndex = 1u;
 }
 
 void Renderer::RenderUI()
@@ -40,10 +55,22 @@ void Renderer::RenderUI()
 	ImGui::Text("Last render: %.3fms", lastRenderTime);
 	ImGui::SliderFloat3("Light direction", &lightDir.x, -1.0f, 1.0f);
 
+	ImGui::Separator();
+
+	ImGui::Checkbox("Accumulate", &m_Accumulate);
+	if (ImGui::Button("Reset")) {
+		ResetFrameIndex();
+	}
+
 	ImGui::End();
 }
 
-DirectX::XMFLOAT4 Renderer::PerPixel(int x, int y) const
+void Renderer::ResetFrameIndex()
+{
+	m_FrameIndex = 1u;
+}
+
+DirectX::XMFLOAT4 Renderer::PerPixel(int x, int y)
 {
 	Ray ray;
 	DirectX::XMStoreFloat3(&ray.origin, m_ActiveCamera->GetPosition());

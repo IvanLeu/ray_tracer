@@ -15,7 +15,7 @@ public:
 	const std::vector<DirectX::XMFLOAT3>& GetRayDirections() const noexcept;
 	void Move(float dt, DirectX::XMFLOAT3 v) noexcept;
 	void Rotate(float dt, float deltaX, float deltaY) noexcept;
-	void Update() noexcept;
+	bool Update() noexcept;
 	void SetMoveSpeed(float speed) noexcept;
 	void SetRotationSpeed(float speed) noexcept;
 private:

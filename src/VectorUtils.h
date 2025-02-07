@@ -44,11 +44,29 @@ namespace Utils
 		};
 	}
 
+	inline DirectX::XMFLOAT4 Add(const DirectX::XMFLOAT4& v1, const DirectX::XMFLOAT4& v2) {
+		return {
+			v1.x + v2.x,
+			v1.y + v2.y,
+			v1.z + v2.z,
+			v1.w + v2.w,
+		};
+	}
+
 	inline DirectX::XMFLOAT3 Scale(const DirectX::XMFLOAT3& v1, float scalar) {
 		return {
 			v1.x * scalar,
 			v1.y * scalar,
 			v1.z * scalar,
+		};
+	}
+
+	inline DirectX::XMFLOAT4 Scale(const DirectX::XMFLOAT4& v1, float scalar) {
+		return {
+			v1.x * scalar,
+			v1.y * scalar,
+			v1.z * scalar,
+			v1.w * scalar,
 		};
 	}
 
