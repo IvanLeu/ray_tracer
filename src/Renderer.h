@@ -20,7 +20,7 @@ public:
 	void RenderUI();
 	void ResetFrameIndex();
 private:
-	DirectX::XMFLOAT4 PerPixel(int x, int y); // RayGen
+	DirectX::XMFLOAT4 PerPixel(uint64_t x, uint64_t y); // RayGen
 	HitPayload TraceRay(const Ray& ray) const;
 	HitPayload ClosestHit(const Ray& ray, float hitDistance, int objectIndex) const;
 	HitPayload Miss() const;
@@ -33,6 +33,8 @@ private:
 	bool m_Accumulate = true;
 	uint64_t m_FrameIndex = 1u;
 	std::unique_ptr<DirectX::XMFLOAT4[]> m_AccumulationData = nullptr;
+	std::vector<uint64_t> m_VerticalIter;
+	std::vector<uint64_t> m_HorizontalIter;
 	// Scene
 	DirectX::XMFLOAT4 clearColor = { 0.6f, 0.8f, 0.9f, 1.0f };
 	DirectX::XMFLOAT3 lightDir = { -1.0f, 1.0f, 1.0f };

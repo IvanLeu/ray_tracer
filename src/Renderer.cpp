@@ -3,6 +3,10 @@
 #include "imgui.h"
 
 #include <chrono>
+#include <numeric>
+#include <ranges>
+#include <algorithm>
+#include <execution>
 
 Renderer::Renderer(Graphics& gfx)
 	:
@@ -11,6 +15,10 @@ Renderer::Renderer(Graphics& gfx)
 	m_AccumulationData(new DirectX::XMFLOAT4[m_Width * m_Height])
 {
 	gfx.SetTextureClearColor(clearColor);
+	m_VerticalIter.resize(m_Height);
+	m_HorizontalIter.resize(m_Width);
+	std::ranges::iota(m_VerticalIter, 0);
+	std::ranges::iota(m_HorizontalIter, 0);
 }
 
 void Renderer::Render(Graphics& gfx, const Scene& scene, const Camera& camera)
@@ -24,6 +32,25 @@ void Renderer::Render(Graphics& gfx, const Scene& scene, const Camera& camera)
 
 	auto start = std::chrono::high_resolution_clock::now();
 
+#define MT 1
+#ifdef MT
+	std::for_each(std::execution::par, m_VerticalIter.begin(), m_VerticalIter.end(),
+		[this, &gfx](uint64_t y) {
+			std::for_each(std::execution::par, m_HorizontalIter.begin(), m_HorizontalIter.end(),
+				[this, y, &gfx](uint64_t x) {
+					auto color = PerPixel(x, y);
+					color.w = 1.0f;
+
+					m_AccumulationData[x + y * m_Width] = Utils::Add(m_AccumulationData[x + y * m_Width], color);
+					color = Utils::Scale(m_AccumulationData[x + y * m_Width], (1.0f / (float)m_FrameIndex));
+
+					color = Utils::Clamp(color, 0.0f, 1.0f);
+					gfx.PutPixel((int)x, (int)y, color);
+				}
+			);
+		}
+	);
+#else
 	for (int y = 0; y < m_Height; ++y) {
 		for (int x = 0; x < m_Width; ++x) {
 
@@ -37,7 +64,7 @@ void Renderer::Render(Graphics& gfx, const Scene& scene, const Camera& camera)
 			gfx.PutPixel(x, y, color);
 		}
 	}
-
+#endif
 	auto end = std::chrono::high_resolution_clock::now();
 
 	lastRenderTime = std::chrono::duration<float, std::milli>(end - start).count();
@@ -70,7 +97,7 @@ void Renderer::ResetFrameIndex()
 	m_FrameIndex = 1u;
 }
 
-DirectX::XMFLOAT4 Renderer::PerPixel(int x, int y)
+DirectX::XMFLOAT4 Renderer::PerPixel(uint64_t x, uint64_t y)
 {
 	Ray ray;
 	DirectX::XMStoreFloat3(&ray.origin, m_ActiveCamera->GetPosition());
